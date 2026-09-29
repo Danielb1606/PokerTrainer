@@ -509,7 +509,10 @@ body.ask-open .ask-fab{display:none}
   .drill-ctrl .seg button{flex:1 1 auto}
   #view-drill{padding-bottom:110px}
   .statbar{padding:8px 12px;gap:6px}
-  .statbar .catchips,.statbar .weak,.statbar .statbtns{display:none}
+  .statbar .catchips{display:none}
+  .statbar .statbtns{display:flex;width:100%;gap:8px}
+  .statbar .statbtns button{flex:1;padding:9px 6px}
+  #dReset.confirm{background:var(--bad);color:#fff;border-color:var(--bad)}
   .statbar .mq{padding-top:6px;font-size:12px}
   .drill-q{padding:14px;gap:12px}
   .situ{font-size:16px}
@@ -527,7 +530,9 @@ body.ask-open .ask-fab{display:none}
   .drill-right .review-empty{display:none}
   .review-head{position:sticky;top:0;background:var(--panel);padding-block:4px 8px;z-index:2}
   .review-head .hint{display:none}
-  .review-head .hist{flex-wrap:nowrap;overflow-x:auto;max-width:100%}
+  .review-head{flex-wrap:nowrap!important}
+  .review-head h3{flex:none;white-space:nowrap}
+  .review-head .hist{flex-wrap:nowrap;overflow-x:auto;min-width:0;flex:1 1 auto;justify-content:flex-start}
   .review-head .ask-inline span{display:none}
   .review-head .ask-inline{padding:6px 8px}
   .fb{font-size:14px}
@@ -2001,7 +2006,7 @@ function renderStats(){
   w.hidden=!weakest;
 }
 document.getElementById("dMore").addEventListener("toggle",e=>{ if(e.isTrusted!==false) chartsOpen=e.target.open; });
-document.getElementById("dReset").onclick=()=>{ missQ=missQ.filter(x=>x.kind!==dmode); reviewOnly=false; stats[dmode]=blankStreet(); (dmode==="pre"?PRE_CATS:POST_CATS).forEach(k=>stats.cat[k]=[0,0]); renderStats(); save(); };
+let resetArm=0; document.getElementById("dReset").onclick=()=>{ const rb=document.getElementById("dReset"); if(Date.now()-resetArm>3000){ resetArm=Date.now(); rb.classList.add("confirm"); rb.textContent="Tap again to reset "+(dmode==="pre"?"preflop":"postflop"); setTimeout(()=>{ if(Date.now()-resetArm>=2900){ rb.classList.remove("confirm"); rb.textContent="Reset"; } },3000); return; } resetArm=0; rb.classList.remove("confirm"); rb.textContent="Reset"; missQ=missQ.filter(x=>x.kind!==dmode); reviewOnly=false; stats[dmode]=blankStreet(); (dmode==="pre"?PRE_CATS:POST_CATS).forEach(k=>stats.cat[k]=[0,0]); renderStats(); save(); };
 document.addEventListener("keydown",e=>{
   if(view!=="drill"||e.target.tagName==="INPUT"||e.target.tagName==="TEXTAREA"||e.metaKey||e.ctrlKey||e.altKey) return;
   const k=e.key.toLowerCase();

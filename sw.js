@@ -1,0 +1,15 @@
+// Offline support: every file is cached on first visit. The app opens from the cache
+// instantly, and quietly picks up any newer version next time you're online.
+const CACHE = "poker-trainer-v1";
+const FILES = ["./", "./index.html", "./manifest.webmanifest", "./icon-192.png", "./icon-512.png", "./icon-maskable-512.png", "./apple-touch-icon.png"];
+self.addEventListener("install", e => { e.waitUntil(caches.open(CACHE).then(c => c.addAll(FILES)).then(() => self.skipWaiting())); });
+self.addEventListener("activate", e => { e.waitUntil(caches.keys().then(ks => Promise.all(ks.filter(k => k !== CACHE).map(k => caches.delete(k)))).then(() => self.clients.claim())); });
+self.addEventListener("fetch", e => {
+  if (e.request.method !== "GET") return;
+  const req = e.request.mode === "navigate" ? "./index.html" : e.request;
+  e.respondWith(caches.open(CACHE).then(async c => {
+    const hit = await c.match(req, { ignoreSearch: true });
+    const net = fetch(e.request).then(r => { if (r.ok) c.put(req, r.clone()); return r; }).catch(() => hit);
+    return hit || net;
+  }));
+});

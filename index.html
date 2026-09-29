@@ -711,7 +711,7 @@ body.ask-open .ask-fab{display:none}
           <li><b>Paired?</b> Paired boards rarely help either player.</li>
           <li><b>Suits:</b> rainbow, two-tone or monotone?</li>
           <li><b>Connectedness:</b> dry, some straight draws, or very connected?</li>
-          <li><b>Top pairs:</b> who has more top pairs and overpairs? (range advantage)</li>
+          <li><b>Top pairs:</b> who has more top pairs and overpairs? (range advantage) As the preflop raiser it's almost always you, so the drill skips this step.</li>
           <li><b>Strong hands:</b> who has more two pair or better? (nut advantage)</li>
           <li><b>Plan:</b> small bet often, big bet, or check often.</li>
         </ol>
@@ -1174,6 +1174,14 @@ function drawName(q){
   return parts.join(" plus ");
 }
 function fmtPct(x){ return Math.round(x*100)+"%"; }
+function spreadChoices(correct,pool,n=4){
+  const lo=shuffle([...new Set(pool.filter(x=>x>0&&x<correct))]), hi=shuffle([...new Set(pool.filter(x=>x>correct))]);
+  const ranks=[]; for(let r=0;r<n;r++) if(lo.length>=r&&hi.length>=n-1-r) ranks.push(r);
+  const r=ranks.length?rnd(ranks):Math.min(lo.length,n-1);
+  const pick=[...lo.slice(0,r),correct,...hi.slice(0,n-1-r)];
+  [...lo.slice(r),...hi.slice(n-1-r)].forEach(x=>{ if(pick.length<n) pick.push(x); });
+  return pick.sort((a,b)=>a-b);
+}
 function choicesAround(correct,pool){
   const set=new Set([correct]); shuffle(pool.filter(x=>x!==correct&&x>0)).forEach(x=>{ if(set.size<4) set.add(x); });
   return shuffle([...set]);
@@ -1182,7 +1190,7 @@ function choicesAround(correct,pool){
 function genOuts(){
   let q=dealDraw(3); for(let i=0;i<20&&q.outs.length===4&&Math.random()<0.6;i++) q=dealDraw(3);
   q.outs.sort((x,y)=>RV(y)-RV(x)); const n=q.outs.length;
-  const opts=choicesAround(n,[n-4,n-3,n-2,n+1,n+2,n+3,n+4,4,8,9,12,15]).sort((a,b)=>a-b);
+  const opts=spreadChoices(n,[n-4,n-3,n-2,n-1,n+1,n+2,n+3,n+4,4,8,9,12,15]);
   const turnRiver=1-((47-n)/47)*((46-n)/46);
   return {cat:"outs", hero:q.hero, board:q.board, fl:q.fl, stOuts:q.st, outsList:q.outs,
     situ:"Flop. How many outs do you have to make a straight or a flush?",
@@ -1190,12 +1198,14 @@ function genOuts(){
     explain:`You have ${drawName(q)}: <b>${n} outs</b> (${q.outs.map(cardText).join(" ")}). Next card: ${n}/47 ≈ ${fmtPct(n/47)}. By the river: ≈ ${fmtPct(turnRiver)} (rule of 4: ${n*4}%${n>9?", the rule runs high for big draws":""}). Some outs can be "dirty" if they also give an opponent a better hand.`};
 }
 function genOdds(){
-  for(let t=0;t<200;t++){
+  const want=Math.random()<0.5?"Call":"Fold";
+  for(let t=0;t<400;t++){
     const q=dealDraw(4,true), n=q.outs.length, eq=n/46;
     const f=rnd([0.33,0.5,0.66,0.75,1,1.5]), pot=rnd([8,10,12,14,16,20,24,30,36,40]);
     const bet=Math.round(pot*f*2)/2, req=bet/(pot+2*bet);
     if(Math.abs(eq-req)<0.025) continue;
     const ok=eq>=req?"Call":"Fold";
+    if(ok!==want&&t<380) continue;
     return {cat:"odds", hero:q.hero, board:q.board, fl:q.fl, stOuts:q.st, outsList:q.outs, eq, req,
       situ:`Turn. The pot is <b>${pot}bb</b> and villain bets <b>${bet}bb</b> (${Math.round(f*100)}% pot). Villain is all-in, so you get no implied odds. Call or fold?`,
       opts:["Call","Fold"], correct:ok, short:ok,
@@ -1207,9 +1217,9 @@ function genMath(){
   const bluff=f/(1+f), mdf=1/(1+f), callEq=f/(1+2*f);
   const kind=rnd(["bluff","mdf","call"]);
   const val={bluff,mdf,call:callEq}[kind];
-  const cand=[bluff,mdf,callEq,val+0.1,val-0.1,val+0.2].map(x=>Math.round(x*100)).filter(x=>x>0&&x<100);
   const correct=Math.round(val*100);
-  const opts=[...new Set([correct,...shuffle(cand)])].slice(0,4).sort((a,b)=>a-b).map(x=>x+"%");
+  const cand=[bluff,mdf,callEq,val+0.05,val-0.05,val+0.1,val-0.1,val+0.15,val-0.15,val+0.2,val-0.2].map(x=>Math.round(x*100)).filter(x=>x>0&&x<100&&Math.abs(x-correct)>=3);
+  const opts=spreadChoices(correct,cand).map(x=>x+"%");
   const q={
     bluff:[`You bet <b>${p}% pot</b> as a pure bluff. How often does villain need to fold for it to break even?`, `Break-even for a bluff = bet ÷ (pot + bet) = ${f} ÷ ${(1+f).toFixed(2)} = <b>${correct}%</b>.`],
     mdf:[`Villain bets <b>${p}% pot</b>. What is your minimum defence frequency, so their bluffs can't profit automatically?`, `MDF = pot ÷ (pot + bet) = 1 ÷ ${(1+f).toFixed(2)} = <b>${correct}%</b>. Defend (call or raise) at least this often with your range.`],
@@ -1218,10 +1228,11 @@ function genMath(){
     explain:q[1]+` For reference at ${p}% pot: bluff break-even ${fmtPct(bluff)}, MDF ${fmtPct(mdf)}, equity to call ${fmtPct(callEq)}.`};
 }
 const CBET_OPTS=["Small bet (~33%), often","Big bet (~75%)","Check often"];
-function rawCbet(){
+function cbetCat(){ const bucket=Math.random(); // balance answers: ~50% small, ~25% big, ~25% check
+  return bucket<0.25 ? "lowconn" : bucket<0.5 ? "highwet" : rnd(["highdry","bwdry","paired","monotone","khigh2t","middry"]); }
+function rawCbet(force){
   const hi=["A","K","Q","J","T","9"], val=c=>14-idx(c);
-  const bucket=Math.random(); // balance answers: ~50% small, ~25% big, ~25% check
-  const cat= bucket<0.25 ? "lowconn" : bucket<0.5 ? "highwet" : rnd(["highdry","bwdry","paired","monotone","khigh2t","middry"]);
+  const cat= force || cbetCat();
   let ranks=[];
   const pick3=(pool,test)=>{ for(let i=0;i<500;i++){ const r=shuffle([...pool]).slice(0,3); if(new Set(r).size===3&&test(r.map(val).sort((a,b)=>b-a))) return r; } };
   if(cat==="highdry") ranks=pick3(["A","K","9","8","7","6","5","4","3","2"],v=>v[0]>=13&&v[1]<=9&&v[1]-v[2]>=3&&v[0]-v[1]>=3);
@@ -1273,8 +1284,9 @@ function supports(btype,P){
   if(btype==="lowconn") return P.sLead!=="You"&&(P.sLead==="BB"||P.drLead==="BB");
   return true;
 }
-function genCbet(){
-  let q; for(let i=0;i<60;i++){ q=rawCbet(); const P=boardProfile(q.board,q.opener); if(supports(q.btype,P)){ q.prof=P; break; } }
+function genCbet(force){
+  force=force||cbetCat();
+  let q; for(let i=0;i<60;i++){ q=rawCbet(force); const P=boardProfile(q.board,q.opener); if(supports(q.btype,P)){ q.prof=P; break; } }
   q.prof=q.prof||boardProfile(q.board,q.opener);
   q.explain+=` <span class="muted">On this board, ${leadText(q.prof)}</span>`;
   return q;
@@ -1301,8 +1313,17 @@ function connInfo(board){
   const label= S.length>=2 ? "Very connected" : (S.length===1||O.length>=2) ? "Some straight draws" : "Dry";
   return {S,O,label};
 }
+const TX_FREQ={height:{"A/K-high":.44,"Middling (Q–8)":.48,"Low (7 or less)":.08},suits:{"Rainbow":.48,"Two-tone":.43,"Monotone":.10},conn:{"Dry":.5,"Some straight draws":.2,"Very connected":.3},nuts:{"You":.15,"Even":.72,"BB":.13}};
+function texBoard(){
+  // deal a few candidate boards and favour rarer answers, so no step has an answer that is almost always right
+  if(Math.random()<0.3) return genCbet("paired");
+  const c=[...Array(5)].map(()=>genCbet()), w=c.map(q=>{ const b=q.board, top=Math.max(...b.map(RV)), ns=new Set(b.map(x=>x[1])).size, P=q.prof||boardProfile(b,q.opener);
+    const h=top>=13?"A/K-high":top>=8?"Middling (Q–8)":"Low (7 or less)", su=ns===3?"Rainbow":ns===2?"Two-tone":"Monotone";
+    return 1/(TX_FREQ.height[h]*TX_FREQ.suits[su]*TX_FREQ.conn[connInfo(b).label]*TX_FREQ.nuts[P.sLead]**2); });
+  let r=Math.random()*w.reduce((a,x)=>a+x,0); for(let i=0;i<c.length;i++){ r-=w[i]; if(r<=0) return c[i]; } return c[0];
+}
 function genTexture(){
-  const base=genCbet(), b=base.board, vals=b.map(RV), top=Math.max(...vals);
+  const base=texBoard(), b=base.board, vals=b.map(RV), top=Math.max(...vals);
   const height= top>=13 ? "A/K-high" : top>=8 ? "Middling (Q–8)" : "Low (7 or less)";
   const paired= new Set(vals).size<3 ? "Paired" : "Unpaired";
   const ns=new Set(b.map(c=>c[1])).size, suits= ns===3?"Rainbow":ns===2?"Two-tone":"Monotone";
@@ -1319,8 +1340,7 @@ function genTexture(){
       why: suits==="Rainbow"?"Three different suits: no flush draws yet.":suits==="Two-tone"?"Two cards share a suit, so flush draws are possible.":"All one suit: flushes are already possible."},
     {key:"conn", q:"How connected is it?", opts:["Dry","Some straight draws","Very connected"], correct:ci.label,
       why: ci.S.length ? `${ci.S.length} two-card hand${ci.S.length>1?"s":""} already make${ci.S.length>1?"":"s"} a straight (${ci.S.join(", ")})${ci.O.length?`, and ${ci.O.length} more give open-ended draws`:""}.` : ci.O.length ? `No straight is possible yet, but ${ci.O.length} two-card hand${ci.O.length>1?"s":""} make${ci.O.length>1?"":"s"} an open-ended draw (${ci.O.slice(0,6).join(", ")}${ci.O.length>6?"…":""}).` : "No two cards make a straight, and almost nothing makes an open-ended draw."},
-    {key:"tp", q:"Who has more top pairs and overpairs?", opts:["You","Even","BB"], correct:P.tpLead, why:ld(P.tpLead,P.you.tp,P.bb.tp)+" This is the range advantage: whose everyday hands are stronger."},
-    {key:"nuts", q:"Who has more two pair or better?", opts:["You","Even","BB"], correct:P.sLead, why:ld(P.sLead,P.you.s,P.bb.s)+" This is the nut advantage: who holds the monsters. Draws: you "+pp(P.you.dr)+" vs BB "+pp(P.bb.dr)+"."},
+    {key:"nuts", q:"Who has more two pair or better?", opts:["You","Even","BB"], correct:P.sLead, why:ld(P.sLead,P.you.s,P.bb.s)+" This is the nut advantage: who holds the monsters. Draws: you "+pp(P.you.dr)+" vs BB "+pp(P.bb.dr)+". Top pairs and overpairs: you "+pp(P.you.tp)+" vs BB "+pp(P.bb.tp)+". As the preflop raiser you almost always lead there, so the nut advantage is what changes the plan."},
     {key:"plan", q:"So what's the plan with your range?", opts:CBET_OPTS, correct:base.correct, why:base.explain.replace(/^<b>[^<]*<\/b>\s*/,"")}
   ];
   return {cat:"texture", hero:null, board:b, btype:base.btype, opener:base.opener, steps, si:0, picks:[], stepOk:[],
@@ -1537,8 +1557,7 @@ function genBluff(){
   if(Math.random()<0.2){ // bluff-to-value ratio, exact
     const f=rnd([0.33,0.5,0.66,0.75,1,1.5]), v=rnd([6,8,10,12,15,18,20,24]);
     const b=Math.round(v*f/(1+f)), p=Math.round(f*100);
-    const opts=[...new Set([b,Math.round(v*f/(1+2*f)),Math.round(v/2),v,Math.max(1,Math.round(v*f))])].filter(x=>x>0).slice(0,4).sort((a,c)=>a-c);
-    if(!opts.includes(b)) opts[0]=b;
+    const opts=spreadChoices(b,[Math.round(v*f/(1+2*f)),Math.round(v/2),v,Math.max(1,Math.round(v*f)),b-3,b-2,b-1,Math.round(b/2),b+1,b+2,b+3,b+5]);
     return {cat:"bluff", sub:"ratio", hero:null, board:null, f, v, bl:b,
       situ:`River. You bet <b>${p}% pot</b> with <b>${v}</b> value combos. About how many bluff combos should you add so villain can't profit by always calling or always folding?`,
       opts:[...new Set(opts)].sort((a,c)=>a-c).map(String), correct:String(b), short:b+" bluffs",
@@ -1555,6 +1574,7 @@ function genBluff(){
     q.cands=sc.cands.map(h=>cs2(h).map(mc));
     q.opts=q.cands.map(h=>h.map(cardText).join(" "));
     q.correct=q.opts[sc.ans]; q.short=q.correct;
+    const ord=shuffle(q.opts.map((_,i)=>i)); q.cands=ord.map(i=>q.cands[i]); q.opts=ord.map(i=>q.opts[i]);
   } else { q.opts=sc.opts; q.correct=sc.ans; q.short=sc.ans; q.alsoOk=sc.also||[]; }
   q.explain=`<b>${sc.kind==="best"?"Best bluff: "+q.correct:q.correct}.</b> ${q.why}`;
   return q;
@@ -1872,7 +1892,7 @@ function renderDrill(){
     document.getElementById("dSitu").innerHTML=reviewTag()+situText(spot);
     document.getElementById("dCards").innerHTML=`<div class="cards">${dq.cards.map(cardHTML).join("")}</div><span class="muted" style="align-self:end">${hand}</span>`;
     const agg=spot.type==="rfi"?"Raise":spot.type==="open"?"3-bet":"4-bet";
-    const opts=[["agg",agg,"A"]]; if(spot.hasCall) opts.push(["call","Call","C"]); opts.push(["fold","Fold","F"]);
+    const opts=[["agg",agg,"A"]]; if(spot.type!=="rfi") opts.push(["call","Call","C"]); opts.push(["fold","Fold","F"]);
     opts.forEach(([k,l,key])=>{ const b=document.createElement("button"); b.type="button"; b.className="a-"+(k==="agg"&&spot.type==="rfi"?"raise":k); b.innerHTML=l+`<kbd>${key}</kbd>`; b.onclick=()=>answer(k); ans.appendChild(b); });
   } else {
     if(dq.cat==="texture"){ const st=dq.steps[dq.si];
@@ -1900,7 +1920,7 @@ function renderReview(){
   if(r.kind==="pre"){
     const spot=getSpot(r.seat,r.type,r.vill);
     const nm={agg:spot.type==="rfi"?"raise":spot.type==="open"?"3-bet":"4-bet",call:"call",fold:"fold"};
-    fb.innerHTML=qNote(r)+`<b>${r.ok?"✓ Correct.":"✗ Not quite."}</b> ${situText(spot).replace(/<\/?b>/g,"")} You chose <b>${nm[r.pick]}</b> with <b>${r.hand}</b>, which is ${actionText(spot,r.hand)}. <span class="muted">${spot.tip.replace(/<b>Why:<\/b> /,"")}</span>`;
+    fb.innerHTML=qNote(r)+`<b>${r.ok?"✓ Correct.":"✗ Not quite."}</b> ${situText(spot).replace(/<\/?b>/g,"")} You chose <b>${nm[r.pick]}</b> with <b>${r.hand}</b>, which is ${actionText(spot,r.hand)}.${r.pick==="call"&&!spot.hasCall?` <b>There's no calling range here:</b> from the ${spot.seat} these charts 3-bet or fold, because flatting out of position with players still to act invites squeezes and multiway pots.`:""} <span class="muted">${spot.tip.replace(/<b>Why:<\/b> /,"")}</span>`;
     duo.className="duo"; renderDuo(duo,spot,r.hand);
   } else {
     const q=r.q;
@@ -1908,7 +1928,7 @@ function renderReview(){
       const T=stats.texStep||{}; const ws=Object.keys(STEPNAMES).filter(k=>(T[k]||[0,0])[1]>=5).sort((a,b)=>T[a][0]/T[a][1]-T[b][0]/T[b][1])[0];
       const nOk=q.stepOk.filter(Boolean).length;
       fb.innerHTML=qNote(r)+`<b>${r.ok?"✓ All steps right.":`✗ ${nOk} of ${q.steps.length} steps right.`}</b>
-        <div class="tx-sum">${q.board.map(cardText).join(" ")} — ${q.steps.slice(0,4).map(st=>st.correct).join(" · ")} → top pairs: <b>${q.steps[4].correct}</b> · strong hands: <b>${q.steps[5].correct}</b> → <b>${q.steps[6].correct}</b></div>
+        <div class="tx-sum">${q.board.map(cardText).join(" ")} — ${q.steps.filter(st=>!["tp","nuts","plan"].includes(st.key)).map(st=>st.correct).join(" · ")}${q.steps.find(st=>st.key==="tp")?` → top pairs: <b>${q.steps.find(st=>st.key==="tp").correct}</b>`:""} → strong hands: <b>${q.steps.find(st=>st.key==="nuts").correct}</b> → <b>${q.steps.find(st=>st.key==="plan").correct}</b></div>
         <table class="cmp tx-tbl"><tr><th>Step</th><th>You said</th><th>Answer</th><th>Why</th></tr>${q.steps.map((st,i)=>`<tr class="${q.stepOk[i]?"":"tx-wrong"}"><td>${q.stepOk[i]?"✓":"✗"} ${STEPNAMES[st.key]}</td><td>${q.picks[i]}</td><td><b>${st.correct}</b></td><td>${st.why}</td></tr>`).join("")}</table>
         ${ws?`<div class="muted">Your weakest step so far: <b>${STEPNAMES[ws]}</b> (${Math.round(T[ws][0]/T[ws][1]*100)}% right).</div>`:""}`;
     } else
@@ -2021,7 +2041,7 @@ document.addEventListener("keydown",e=>{
   if(view!=="drill"||e.target.tagName==="INPUT"||e.target.tagName==="TEXTAREA"||e.metaKey||e.ctrlKey||e.altKey) return;
   const k=e.key.toLowerCase();
   if(dq.kind==="pre"){
-    if(k==="a"||k==="r"||k==="3"||k==="4") answer("agg"); else if(k==="c"&&dq.spot.hasCall) answer("call"); else if(k==="f") answer("fold");
+    if(k==="a"||k==="r"||k==="3"||k==="4") answer("agg"); else if(k==="c"&&dq.spot.type!=="rfi") answer("call"); else if(k==="f") answer("fold");
   } else {
     const n=parseInt(k,10); if(n>=1&&n<=dq.opts.length) answer(dq.opts[n-1]);
     else if(k==="c"&&dq.opts.includes("Call")) answer("Call"); else if(k==="f"&&dq.opts.includes("Fold")) answer("Fold");

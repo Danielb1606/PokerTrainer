@@ -1204,6 +1204,15 @@ function oppProfile(){ const P=profiles||{}; for(const n of OPP_NAMES){ const p=
 function officialData(){ const p=oppProfile(); return p?p.data:null; }
 function oppName(){ const p=oppProfile(); return p?p.name:"GTO-Wiz-Official"; }
 function oppData(){ return officialData()||chartData(); }
+function unreached(D,key){ const F=D&&D.fills; if(!F||!F.spots||!F.spots[key]) return null; const defs={}; (F.defs||[]).forEach(d=>defs[d.id]=d);
+  const S=new Set(); for(const h in F.spots[key]){ const d=defs[F.spots[key][h]]; if(d&&d.act==="fold") S.add(h); } return S.size?S:null; }
+function stripUnreached(block,S){ if(!block||!S) return;
+  block.layers=block.layers.map(l=>L(l.cls,compressRange([...parse(l.range)].filter(h=>!S.has(h))),compressRange([...parse(l.edge)].filter(h=>!S.has(h)))));
+  if(block.mix){ const m={}; for(const h in block.mix) if(!S.has(h)) m[h]=block.mix[h]; block.mix=m; } }
+function raisedSet(D,seat,type,vill){ try{ const b=getSpotBase(seat,type,vill,D); const key=type==="rfi"?"RFI:"+seat:"VS:"+seat+"|"+vill; const mx=(D&&D.mixes&&D.mixes.spots&&D.mixes.spots[key])||{};
+    const agg=["open","val","bluff","allin"]; const S=new Set();
+    ALLHANDS.forEach(h=>{ const m=mx[h]; if(m){ if(agg.some(a=>(m[a]||0)>0)) S.add(h); return; } const a=actionOf(b.hero.layers,h); if(a&&agg.includes(a.cls)) S.add(h); }); return S; }catch(e){ return null; } }
+function keepOnly(block,S){ if(!block||!S) return; const out=new Set(ALLHANDS.filter(h=>!S.has(h))); if(out.size) stripUnreached(block,out); }
 function getSpot(seat,type,vill,D,raw){
   const sp=getSpotBase(seat,type,vill,D);
   const M=D&&D.mixes; if(M&&M.spots){ const k=type==="rfi"?"RFI:"+seat:type==="open"?"VS:"+seat+"|"+vill:type==="4bet"?"F4:"+seat+"|"+vill:"F3V:"+seat+"|"+vill; sp.hero.mix=M.spots[k]||null; }
@@ -1219,6 +1228,12 @@ function getSpot(seat,type,vill,D,raw){
   if(OD&&sp.villain&&!profEditing&&OD!==(D||BUILTIN)){ try{ const vb=getSpotBase(seat,type,vill,OD); if(vb.villain){ sp.villain=vb.villain; sp.villainData=OD;
         if(type==="open"&&OD.info&&OD.info.spots){ const vi=OD.info.spots["RFI:"+vill]; const m=vi&&vi.sub&&vi.sub.match(/Open ([\d.]+bb)/); if(m) sp.villain.sub=vill+" raises "+m[1]; }
         sp.villain.sub=(sp.villain.sub||"")+" · "+oppName(); } }catch(e){} }
+  // hands the profile marks "Not in range" (a fold-colour fill: can't reach this spot) are never part of the range
+  if(!profEditing){ stripUnreached(sp.hero,unreached(D,k2));
+    if(sp.villain&&type==="4bet") stripUnreached(sp.villain,unreached(sp.villainData||D,"F3V:"+vill+"|"+seat));
+    // and a hand can only face a 3-bet / 4-bet if this profile actually opened / 3-bet it the step before
+    if(type==="3bet") keepOnly(sp.hero,raisedSet(D,seat,"rfi",null));
+    if(type==="4bet"){ keepOnly(sp.hero,raisedSet(D,seat,"open",vill)); if(sp.villain) keepOnly(sp.villain,raisedSet(sp.villainData||D,vill,"rfi",null)); } }
   sp.plan=actionPlan(sp,D,seat,type,vill);
   if(!raw) applyMinimal(sp,D);   // raw = opponent range: never cropped/simplified
   return sp;

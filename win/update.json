@@ -1,8 +1,8 @@
 {
   "applicationId": "app.pokertrainer.sixmax",
-  "version": "1.3.2",
+  "version": "1.3.3",
   "resourcesURL": "resources.neu",
-  "sha256": "908d630505db3a52dc1cfad592916e10d159e2faead69d09075316a1b1ce47e8",
-  "notes": "Charts line up again; equity moved into the title row; clearer buttons",
+  "sha256": "0691701d37f24881c84710c4b098ac7283783ee71eee3e7defa9508b532cc253",
+  "notes": "Equity strip back above the charts; both tabs still line up",
   "data": {}
 }

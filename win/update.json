@@ -1,8 +1,8 @@
 {
   "applicationId": "app.pokertrainer.sixmax",
-  "version": "1.3.0",
+  "version": "1.3.1",
   "resourcesURL": "resources.neu",
-  "sha256": "4c0983118420c5b2833f92a89c8a0a08f5710143278c5df7841c0c83ac261ab9",
-  "notes": "Automatic updates",
+  "sha256": "10520ab3480f78238c081c01f6693ab7de131d64f08616992e40865a976492dd",
+  "notes": "Equity before the flop; clickable seats no longer look greyed out",
   "data": {}
 }

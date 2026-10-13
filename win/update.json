@@ -1,8 +1,8 @@
 {
   "applicationId": "app.pokertrainer.sixmax",
   "version": "1.3.0",
-  "resourcesURL": "https://danielb1606.github.io/pokertrainer/win/resources.neu",
-  "sha256": "f90fd7a6f489af07440929bfd091f35de62c67edfa3db1b58bd403290eb71338",
+  "resourcesURL": "resources.neu",
+  "sha256": "4c0983118420c5b2833f92a89c8a0a08f5710143278c5df7841c0c83ac261ab9",
   "notes": "Automatic updates",
   "data": {}
 }

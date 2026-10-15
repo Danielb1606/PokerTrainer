@@ -1,8 +1,8 @@
 {
   "applicationId": "app.pokertrainer.sixmax",
-  "version": "1.3.12",
+  "version": "1.3.13",
   "resourcesURL": "resources.neu",
-  "sha256": "3bfc824df61259faf5af64af575c0d5b386eb076c03e8b4851d4a71b43711491",
-  "notes": "New chart profile: GTOWIZ-PureTrainingCharts",
+  "sha256": "e169c23b39d1b2bf9376bd27466623d3ce783a1a46d6908c576ce12c94a2db5a",
+  "notes": "Pure training profile keeps hands played 50%+ when facing a raise",
   "data": {}
 }

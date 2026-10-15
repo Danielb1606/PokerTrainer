@@ -1,8 +1,8 @@
 {
   "applicationId": "app.pokertrainer.sixmax",
-  "version": "1.3.9",
+  "version": "1.3.10",
   "resourcesURL": "resources.neu",
-  "sha256": "974ba89c1d16ff3cfe19bb1cdcf85063e187b10d91b4d4b679eff375c26e4366",
-  "notes": "Voice commands stay off until you start them",
+  "sha256": "39ef1071d65f4db7edd69cbf4c3b824d4a1e51e5e608575840967e927b266f30",
+  "notes": "New chart profile: GTO-Wiz-Official-Training",
   "data": {}
 }

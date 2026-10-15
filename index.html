@@ -726,6 +726,9 @@ body{padding-bottom:16px!important}
 .bld-acts{display:flex;flex-wrap:wrap;gap:6px}
 .bld-stat,.bld-keys{font-size:12.5px}
 .bld-grid .c{cursor:pointer;user-select:none}
+.bld-grid.bld-noname .c{color:transparent!important;text-shadow:none!important}
+.bld-names{display:flex;align-items:center;gap:8px;font-size:13.5px;cursor:pointer;user-select:none}
+.bld-names input{width:16px;height:16px;accent-color:var(--accent);margin:0}
 .bld-grid .c.bld-carry{position:relative}
 .bld-grid .c.bld-carry::before{content:"";position:absolute;left:3px;top:3px;width:5px;height:5px;border-radius:50%;background:#fff;opacity:.75;pointer-events:none}
 .bld-seq{display:flex;flex-wrap:wrap;gap:6px}
@@ -940,6 +943,23 @@ body{padding-bottom:16px!important}
   .rg-pick{grid-template-columns:repeat(13,minmax(0,1fr))}
 }
 
+/* ===== phone layer: features added after 2026-10-11 ===== */
+@media (max-width:640px){
+  /* equity strip: two stacked rows instead of one wide line */
+  .eqstrip{height:auto!important;flex-direction:column;gap:8px;padding:8px 12px 10px;overflow:visible}
+  .eqstrip.eq-spacer{display:none}
+  .eqstrip .eqt,.eqstrip .eqt.wide{max-width:none;width:100%}
+  .eqstrip .eql{font-size:10px;white-space:normal}
+  .eqstrip .eqn{flex-wrap:wrap;white-space:normal;gap:4px 10px}
+  .eqstrip .eqv{font-size:26px}
+  .eqstrip .eqbar{width:auto;flex:1 1 90px;min-width:80px}
+  /* colour-view switch and legend wrap */
+  .cmode{flex-wrap:wrap}
+  .rg-pcts{flex-wrap:wrap}
+  /* bet-size badges */
+  .act-main{font-size:13px;padding:4px 9px}
+  .act-alt{white-space:normal;font-size:12px}
+}
 /* ===== phone layer: features added after 2026-10-11 ===== */
 @media (max-width:640px){
   /* equity strip: two stacked rows instead of one wide line */
@@ -3060,6 +3080,8 @@ function bTruth(seat){ const sp=getSpot(seat,"rfi",null,chartData()); return new
 function seqStart(){ bq={seat:"UTG",type:"rfi",vill:null,seq:true,idx:0,carry:{},scores:[]}; }
 function seqNext(){ const i=bq.idx+1; if(i>=BSEQ.length){ seqStart(); return; } bq={seat:BSEQ[i],type:"rfi",vill:null,seq:true,idx:i,carry:Object.assign({},bq.paint),prevSeat:bq.seat,scores:bq.scores.slice()}; }
 let bq=null, bbrush="agg", bfilter="all", bDown=false;
+/* hand names on the squares you paint: off = fill the grid from memory (names come back once you submit) */
+let bNames=true; try{ bNames=localStorage.getItem("pt-bnames")!=="off"; }catch(e){}
 // which profile Build-a-range uses: "" = whatever the chart dropdown has selected
 let bprof=""; try{ bprof=localStorage.getItem("pt-bprof")||""; }catch(e){}
 function bProfile(){ if(bprof==="default") return {id:"default",name:"Claude default",data:BUILTIN}; if(bprof&&profiles[bprof]) return {id:bprof,name:profiles[bprof].name,data:profiles[bprof].data}; return activeProfile; }
@@ -3097,8 +3119,9 @@ function buildKey(k,e){ if(!bq) return; const sp=withBuildProfile(bSpot);
   if(k==="a"||k==="r"||k==="3"||k==="4"){ bbrush="agg"; renderBuild(); }
   else if(k==="c"&&sp.type!=="rfi"){ bbrush="call"; renderBuild(); }
   else if(k==="f"||k==="e"){ bbrush="fold"; renderBuild(); }
+  else if(k==="n"){ bNames=!bNames; try{ localStorage.setItem("pt-bnames",bNames?"on":"off"); }catch(e){} renderBuild(); }
   else if(k==="enter"){ e.preventDefault(); if(bq.done) newBuild(false); else submitBuild(); } }
-function buildGrid(sp){ const g=document.createElement("div"); g.className="grid bld-grid"; g.style.touchAction="none";
+function buildGrid(sp){ const g=document.createElement("div"); g.className="grid bld-grid"+(!bNames&&!bq.done?" bld-noname":""); g.style.touchAction="none";
   const aggCls=sp.type==="rfi"?"open":"val";
   ALLHANDS.forEach((h,i)=>{ const r=Math.floor(i/13),c=i%13,d=document.createElement("div"); const u=bq.paint[h];
     d.className="c"+(r===c?" pair":"")+(u==="agg"?" "+aggCls:u==="call"?" call":"")+(bq.seq&&!bq.done&&bq.carry&&bq.carry[h]&&u?" bld-carry":""); d.dataset.h=h; d.textContent=h;
@@ -3125,16 +3148,18 @@ function renderBuild0(){ showBuildUI(true); if(!bq) return newBuild0(false);
     ${bq.seq?`<div class="bld-seq">${BSEQ.map((s,i)=>`<span class="${i<bq.idx?"done":i===bq.idx?"cur":""}">${s}${bq.scores[i]!=null&&i<=bq.idx&&(i<bq.idx||bq.done)?` <b>${bq.scores[i]}%</b>`:""}</span>`).join("")}</div>`:""}
     <div class="bld-help">${bq.seq&&bq.prevSeat?`Your ${esc(bq.prevSeat)} range is already painted (dotted squares). Add the hands ${esc(bq.seat)} opens on top, fix anything you missed at ${esc(bq.prevSeat)}, and erase anything that doesn't belong.`:`Paint every hand you ${verb} with. Unpainted squares are folds. Click or drag; clicking a square that already has this colour clears it.`}</div>
     <div class="bld-brush" id="bldBrush"></div>
+    <label class="bld-names" title="Turn off to fill the grid from memory. Names come back when you submit."><input type="checkbox" id="bldNames"${bNames?" checked":""}> Show hand names</label>
     <div class="muted" id="bldCount"></div>
     <div class="bld-acts" id="bldActs"></div>
     <div class="bld-stat muted">${S.n?`Ranges built: <b>${S.n}</b> · average <b>${Math.round(S.sum/S.n)}%</b>`:"No ranges built yet"}${best!=null?` · best on this spot <b>${best}%</b>`:""}</div>
-    <div class="bld-keys muted">Keys: R raise · C call · F erase · Enter submit / next</div>`;
+    <div class="bld-keys muted">Keys: R raise · C call · F erase · N names on/off · Enter submit / next</div>`;
   { const ms=document.getElementById("bldMode"); ms.value="build"; ms.onchange=()=>{ const k=ms.value; if(k!=="build"){ dmode=k; hist=[]; revIdx=0; newQ(); } };
     const fs=document.getElementById("bldFilter"); fs.value=bfilter; fs.onchange=()=>{ bfilter=fs.value; newBuild(false); }; }
   { const ps=document.getElementById("bldProf"), cur=activeProfile; const ids=Object.keys(profiles).sort((a,b)=>profiles[a].name.localeCompare(profiles[b].name));
     ps.innerHTML=`<option value="">Same as Charts</option><option value="default">Claude default</option>`+ids.map(id=>`<option value="${esc(id)}">${esc(profiles[id].name)}</option>`).join("");
     ps.value=bprof&&(bprof==="default"||profiles[bprof])?bprof:""; ps.title="Building: "+cur.name;
     ps.onchange=()=>{ bprof=ps.value; try{ localStorage.setItem("pt-bprof",bprof); }catch(e){} bq=null; renderBuild(); }; }
+  { const nb=document.getElementById("bldNames"); nb.onchange=()=>{ bNames=nb.checked; try{ localStorage.setItem("pt-bnames",bNames?"on":"off"); }catch(e){} const g=document.querySelector("#dBuildR .bld-grid"); if(g&&!bq.done) g.classList.toggle("bld-noname",!bNames); }; }
   const B=document.getElementById("bldBrush"); const brushes=[["agg",bAggLabel(sp),sp.type==="rfi"?"open":"val"]]; if(sp.type!=="rfi") brushes.push(["call","Call","call"]); brushes.push(["fold","Erase (fold)","fold"]);
   brushes.forEach(([k,l,cls])=>{ const b=document.createElement("button"); b.type="button"; b.className="bld-b bld-"+cls; b.textContent=l; b.setAttribute("aria-pressed",bbrush===k); b.disabled=bq.done; b.onclick=()=>{ bbrush=k; renderBuild(); }; B.appendChild(b); });
   const A=document.getElementById("bldActs"); const mk=(l,fn,pri)=>{ const b=document.createElement("button"); b.type="button"; b.className="btn-plain"+(pri?" primary":""); b.textContent=l; b.onclick=fn; A.appendChild(b); };

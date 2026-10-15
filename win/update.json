@@ -1,8 +1,8 @@
 {
   "applicationId": "app.pokertrainer.sixmax",
-  "version": "1.3.13",
+  "version": "1.3.14",
   "resourcesURL": "resources.neu",
-  "sha256": "e169c23b39d1b2bf9376bd27466623d3ce783a1a46d6908c576ce12c94a2db5a",
-  "notes": "Pure training profile keeps hands played 50%+ when facing a raise",
+  "sha256": "f6407dc83160201e9669e2235e2878c1c6e300c82d3b44c9026532e250703e2f",
+  "notes": "Build a range: hide hand names to fill from memory",
   "data": {}
 }

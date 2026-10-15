@@ -1,8 +1,8 @@
 {
   "applicationId": "app.pokertrainer.sixmax",
-  "version": "1.3.8",
+  "version": "1.3.9",
   "resourcesURL": "resources.neu",
-  "sha256": "9ff3321b112b2248148659032fdc9b3755652259675854985c110a62335462b3",
-  "notes": "Clearer build-a-range mistakes; version shown in the title bar",
+  "sha256": "974ba89c1d16ff3cfe19bb1cdcf85063e187b10d91b4d4b679eff375c26e4366",
+  "notes": "Voice commands stay off until you start them",
   "data": {}
 }

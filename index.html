@@ -1028,6 +1028,23 @@ body{padding-bottom:16px!important}
   .act-main{font-size:13px;padding:4px 9px}
   .act-alt{white-space:normal;font-size:12px}
 }
+/* ===== phone layer: features added after 2026-10-11 ===== */
+@media (max-width:640px){
+  /* equity strip: two stacked rows instead of one wide line */
+  .eqstrip{height:auto!important;flex-direction:column;gap:8px;padding:8px 12px 10px;overflow:visible}
+  .eqstrip.eq-spacer{display:none}
+  .eqstrip .eqt,.eqstrip .eqt.wide{max-width:none;width:100%}
+  .eqstrip .eql{font-size:10px;white-space:normal}
+  .eqstrip .eqn{flex-wrap:wrap;white-space:normal;gap:4px 10px}
+  .eqstrip .eqv{font-size:26px}
+  .eqstrip .eqbar{width:auto;flex:1 1 90px;min-width:80px}
+  /* colour-view switch and legend wrap */
+  .cmode{flex-wrap:wrap}
+  .rg-pcts{flex-wrap:wrap}
+  /* bet-size badges */
+  .act-main{font-size:13px;padding:4px 9px}
+  .act-alt{white-space:normal;font-size:12px}
+}
 </style>
 
 </head>
@@ -2211,7 +2228,7 @@ document.getElementById("lkIn").addEventListener("input",e=>{
 });
 
 // ---------- DRILL view ----------
-const DFILTER={all:"All spots",rfi:"First in",open:"Facing an open","3bet":"Facing a 3-bet","4bet":"Facing a 4-bet"};
+const DFILTER={all:"All spots",rfi:"First in (edge hands)",open:"Facing an open","3bet":"Facing a 3-bet","4bet":"Facing a 4-bet"};
 const PFILTER={all:"All postflop",ranges:"Range reading",outs:"Outs",odds:"Pot odds",math:"Bet maths",cbet:"C-bet strategy",texture:"Board texture",bluff:"Bluffing"};
 const CATLABEL={ranges:"Range reading",rfi:"First in",open:"Facing an open","3bet":"Facing a 3-bet","4bet":"Facing a 4-bet",outs:"Outs",odds:"Pot odds",math:"Bet maths",cbet:"C-bet strategy",texture:"Board texture",bluff:"Bluffing"};
 const PRE_CATS=["rfi","open","3bet","4bet"], POST_CATS=["ranges","outs","odds","math","cbet","texture","bluff"];
@@ -2225,7 +2242,18 @@ function allSpots(type){
   SEATS.forEach(s=>["rfi","open","3bet","4bet"].forEach(t=>{ if(type!=="all"&&type!==t) return; const v=villainsFor(s,t); if(v===null) return; if(t==="rfi") out.push([s,t,null]); else v.forEach(x=>out.push([s,t,x])); }));
   return out;
 }
+/* the edge of a chart: in each family of hands (pairs; suited/offsuit hands per top card and per kicker) the weakest hand
+   still played and the strongest hand folded, wherever the range switches; mixed hands always count */
+function edgeHands(spot){ const mx=spot.hero.mix||{}, RK="AKQJT98765432";
+  const isIn=h=>{ const m=mx[h]; if(m) return Object.keys(m).some(k=>k!=="fold"&&m[k]>0); return !!actionOf(spot.hero.layers,h); };
+  const fams=[[...RK].map(r=>r+r)];
+  for(let i=0;i<12;i++){ const hi=RK[i], lo=[...RK.slice(i+1)]; fams.push(lo.map(x=>hi+x+"s")); fams.push(lo.map(x=>hi+x+"o")); }
+  for(let j=1;j<13;j++){ const lo=RK[j], hi=[...RK.slice(0,j)]; fams.push(hi.map(x=>x+lo+"s")); fams.push(hi.map(x=>x+lo+"o")); }   /* same kicker, top card going down */
+  const E=new Set(Object.keys(mx).filter(h=>isIn(h)));
+  fams.forEach(f=>{ const st=f.map(isIn); f.forEach((h,i)=>{ if((i>0&&st[i-1]!==st[i])||(i<f.length-1&&st[i+1]!==st[i])) E.add(h); }); });
+  return ALLHANDS.filter(h=>E.has(h)); }
 function pickHand(spot){
+  if(spot.type==="rfi"&&dfilter==="rfi"){ const E=edgeHands(spot); if(E.length) return E[Math.floor(Math.random()*E.length)]; }
   if(Math.random()<0.65){
     const pool=ALLHANDS.filter(h=>actionOf(spot.hero.layers,h)||(spot.hero.mix&&spot.hero.mix[h]));
     const near=ALLHANDS.filter(h=>!actionOf(spot.hero.layers,h)&&!(spot.hero.mix&&spot.hero.mix[h])&&(spot.villain?actionOf(spot.villain.layers,h):true));

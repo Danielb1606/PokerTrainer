@@ -726,6 +726,12 @@ body{padding-bottom:16px!important}
 .bld-acts{display:flex;flex-wrap:wrap;gap:6px}
 .bld-stat,.bld-keys{font-size:12.5px}
 .bld-grid .c{cursor:pointer;user-select:none}
+.bld-grid .c.bld-carry{position:relative}
+.bld-grid .c.bld-carry::before{content:"";position:absolute;left:3px;top:3px;width:5px;height:5px;border-radius:50%;background:#fff;opacity:.75;pointer-events:none}
+.bld-seq{display:flex;flex-wrap:wrap;gap:6px}
+.bld-seq span{font:600 12.5px "IBM Plex Sans",system-ui,sans-serif;padding:4px 10px;border-radius:999px;border:1px solid var(--line);color:var(--muted)}
+.bld-seq span.done{color:var(--ink)}
+.bld-seq span.cur{border-color:var(--btn-edge,var(--ink));color:var(--ink);box-shadow:inset 0 0 0 1px var(--btn-edge,var(--ink))}
 .bld-grid .c.bm-miss{box-shadow:inset 0 0 0 3px #f5a524}
 .bld-grid .c.bm-extra{position:relative;box-shadow:inset 0 0 0 3px #ff2bd6}
 .bld-grid .c.bm-extra::after{content:"";position:absolute;inset:0;pointer-events:none;background:linear-gradient(to top right,transparent calc(50% - 1.5px),#ff2bd6 calc(50% - 1.5px),#ff2bd6 calc(50% + 1.5px),transparent calc(50% + 1.5px))}
@@ -934,6 +940,23 @@ body{padding-bottom:16px!important}
   .rg-pick{grid-template-columns:repeat(13,minmax(0,1fr))}
 }
 
+/* ===== phone layer: features added after 2026-10-11 ===== */
+@media (max-width:640px){
+  /* equity strip: two stacked rows instead of one wide line */
+  .eqstrip{height:auto!important;flex-direction:column;gap:8px;padding:8px 12px 10px;overflow:visible}
+  .eqstrip.eq-spacer{display:none}
+  .eqstrip .eqt,.eqstrip .eqt.wide{max-width:none;width:100%}
+  .eqstrip .eql{font-size:10px;white-space:normal}
+  .eqstrip .eqn{flex-wrap:wrap;white-space:normal;gap:4px 10px}
+  .eqstrip .eqv{font-size:26px}
+  .eqstrip .eqbar{width:auto;flex:1 1 90px;min-width:80px}
+  /* colour-view switch and legend wrap */
+  .cmode{flex-wrap:wrap}
+  .rg-pcts{flex-wrap:wrap}
+  /* bet-size badges */
+  .act-main{font-size:13px;padding:4px 9px}
+  .act-alt{white-space:normal;font-size:12px}
+}
 /* ===== phone layer: features added after 2026-10-11 ===== */
 @media (max-width:640px){
   /* equity strip: two stacked rows instead of one wide line */
@@ -2996,7 +3019,12 @@ function tableHTML(q){
   return h;
 }
 // ---------- Build-a-range drill: paint a whole chart for one spot, then grade it against your selected profile ----------
-const BFILTER={all:"All spots",rfi:"First in",open:"Facing an open","3bet":"Facing a 3-bet","4bet":"Facing a 4-bet"};
+const BFILTER={all:"All spots",rfi:"First in",seq:"First in, in order (UTG→SB)",open:"Facing an open","3bet":"Facing a 3-bet","4bet":"Facing a 4-bet"};
+/* in-order mode: build UTG, then each later seat starting from the range you submitted for the seat before */
+const BSEQ=["UTG","HJ","CO","BTN","SB"];
+function bTruth(seat){ const sp=getSpot(seat,"rfi",null,chartData()); return new Set(ALLHANDS.filter(h=>accepted(sp,h).some(a=>a!=="fold"))); }
+function seqStart(){ bq={seat:"UTG",type:"rfi",vill:null,seq:true,idx:0,carry:{},scores:[]}; }
+function seqNext(){ const i=bq.idx+1; if(i>=BSEQ.length){ seqStart(); return; } bq={seat:BSEQ[i],type:"rfi",vill:null,seq:true,idx:i,carry:Object.assign({},bq.paint),prevSeat:bq.seat,scores:bq.scores.slice()}; }
 let bq=null, bbrush="agg", bfilter="all", bDown=false;
 // which profile Build-a-range uses: "" = whatever the chart dropdown has selected
 let bprof=""; try{ bprof=localStorage.getItem("pt-bprof")||""; }catch(e){}
@@ -3014,6 +3042,8 @@ function showBuildUI(on){ const v=document.getElementById("view-drill"); if(!v) 
   if(on){ document.getElementById("dReview").hidden=true; document.getElementById("dEmpty").hidden=true; } }
 function newBuild(same){ return withBuildProfile(()=>newBuild0(same)); }
 function newBuild0(same){
+  if(bfilter==="seq"){ if(!bq||!bq.seq) seqStart(); else if(!same) seqNext();
+    bq.paint=Object.assign({},bq.carry); bq.done=false; bq.res=null; bq.tip=false; bq.tipUsed=false; bbrush="agg"; renderBuild(); return; }
   if(!same||!bq){ const ok=allSpots(bfilter).filter(x=>{ try{ const g=getSpot(x[0],x[1],x[2],chartData()); return ALLHANDS.some(h=>accepted(g,h).some(a=>a!=="fold")); }catch(e){ return false; } });
     if(!ok.length){ bfilter="all"; return newBuild0(false); }
     let pick=ok[Math.floor(Math.random()*ok.length)]; if(bq&&ok.length>1) for(let i=0;i<5&&bKey({seat:pick[0],type:pick[1],vill:pick[2]})===bKey(bq);i++) pick=ok[Math.floor(Math.random()*ok.length)];
@@ -3023,8 +3053,11 @@ function gradeBuild(){ const sp=bSpot(); let rel=0, ok=0; const marks={}, cnt={m
   ALLHANDS.forEach(h=>{ const u=bq.paint[h]||"fold", acc=accepted(sp,h), inTruth=acc.some(a=>a!=="fold"); if(u==="fold"&&!inTruth) return;
     const c=combos(h); rel+=c; if(acc.includes(u)){ ok+=c; marks[h]="ok"; return; }
     const m=u==="fold"?"miss":!inTruth?"extra":"wrong"; marks[h]=m; cnt[m]++; });
-  const score=rel?ok/rel:1; return {score,marks,cnt}; }
+  const score=rel?ok/rel:1; const res={score,marks,cnt};
+  if(bq.seq&&bq.prevSeat){ const now=bTruth(bq.seat), before=bTruth(bq.prevSeat), add=[...now].filter(h=>!before.has(h)); res.added=add; res.addedHit=add.filter(h=>bq.paint[h]==="agg"); }
+  return res; }
 function submitBuild(){ if(!bq||bq.done) return; bq.res=withBuildProfile(gradeBuild); bq.done=true; const S=bStats(), k=bKey(bq), sc=Math.round(bq.res.score*100);
+  if(bq.seq) bq.scores=bq.scores.slice(0,bq.idx).concat([sc]);
   S.n++; S.sum+=sc; S.best[k]=Math.max(S.best[k]||0,sc); S.last=[sc,...(S.last||[])].slice(0,10); save(); playSound(sc>=90); renderBuild(); }
 function buildKey(k,e){ if(!bq) return; const sp=withBuildProfile(bSpot);
   if(k==="a"||k==="r"||k==="3"||k==="4"){ bbrush="agg"; renderBuild(); }
@@ -3034,10 +3067,10 @@ function buildKey(k,e){ if(!bq) return; const sp=withBuildProfile(bSpot);
 function buildGrid(sp){ const g=document.createElement("div"); g.className="grid bld-grid"; g.style.touchAction="none";
   const aggCls=sp.type==="rfi"?"open":"val";
   ALLHANDS.forEach((h,i)=>{ const r=Math.floor(i/13),c=i%13,d=document.createElement("div"); const u=bq.paint[h];
-    d.className="c"+(r===c?" pair":"")+(u==="agg"?" "+aggCls:u==="call"?" call":""); d.dataset.h=h; d.textContent=h;
+    d.className="c"+(r===c?" pair":"")+(u==="agg"?" "+aggCls:u==="call"?" call":"")+(bq.seq&&!bq.done&&bq.carry&&bq.carry[h]&&u?" bld-carry":""); d.dataset.h=h; d.textContent=h;
     if(bq.done&&bq.res.marks[h]) d.classList.add("bm-"+bq.res.marks[h]); g.appendChild(d); });
   if(!bq.done){ let mode=null;
-    const apply=el=>{ const h=el&&el.dataset&&el.dataset.h; if(!h) return; if(mode==="fold") delete bq.paint[h]; else bq.paint[h]=mode; el.className="c"+(h.length===2?" pair":"")+(mode==="agg"?" "+aggCls:mode==="call"?" call":""); updBuildCount(); };
+    const apply=el=>{ const h=el&&el.dataset&&el.dataset.h; if(!h) return; if(mode==="fold") delete bq.paint[h]; else bq.paint[h]=mode; el.className="c"+(h.length===2?" pair":"")+(mode==="agg"?" "+aggCls:mode==="call"?" call":"")+(bq.seq&&bq.carry&&bq.carry[h]&&mode!=="fold"?" bld-carry":""); updBuildCount(); };
     g.addEventListener("pointerdown",e=>{ const el=e.target.closest(".c"); if(!el) return; e.preventDefault(); bDown=true; const h=el.dataset.h; mode=(bq.paint[h]||"fold")===bbrush?"fold":bbrush; apply(el); });
     g.addEventListener("pointermove",e=>{ if(!bDown) return; apply(document.elementFromPoint(e.clientX,e.clientY)&&document.elementFromPoint(e.clientX,e.clientY).closest(".bld-grid .c")); });
   }
@@ -3055,7 +3088,8 @@ function renderBuild0(){ showBuildUI(true); if(!bq) return newBuild0(false);
   L.innerHTML=`<div class="bld-prof"><span class="lab">Drill</span><select id="bldMode"><option value="pre">Preflop</option><option value="post">Postflop</option><option value="build">Build a range</option></select></div>
     <div class="bld-prof"><span class="lab">Spots</span><select id="bldFilter">${Object.keys(BFILTER).map(k=>`<option value="${k}">${BFILTER[k]}</option>`).join("")}</select></div>
     <div class="bld-prof"><span class="lab">Build ranges for</span><select id="bldProf"></select></div><p class="situ">${situText(sp)}</p>
-    <div class="bld-help">Paint every hand you ${verb} with. Unpainted squares are folds. Click or drag; clicking a square that already has this colour clears it.</div>
+    ${bq.seq?`<div class="bld-seq">${BSEQ.map((s,i)=>`<span class="${i<bq.idx?"done":i===bq.idx?"cur":""}">${s}${bq.scores[i]!=null&&i<=bq.idx&&(i<bq.idx||bq.done)?` <b>${bq.scores[i]}%</b>`:""}</span>`).join("")}</div>`:""}
+    <div class="bld-help">${bq.seq&&bq.prevSeat?`Your ${esc(bq.prevSeat)} range is already painted (dotted squares). Add the hands ${esc(bq.seat)} opens on top, fix anything you missed at ${esc(bq.prevSeat)}, and erase anything that doesn't belong.`:`Paint every hand you ${verb} with. Unpainted squares are folds. Click or drag; clicking a square that already has this colour clears it.`}</div>
     <div class="bld-brush" id="bldBrush"></div>
     <div class="muted" id="bldCount"></div>
     <div class="bld-acts" id="bldActs"></div>
@@ -3072,6 +3106,7 @@ function renderBuild0(){ showBuildUI(true); if(!bq) return newBuild0(false);
   const A=document.getElementById("bldActs"); const mk=(l,fn,pri)=>{ const b=document.createElement("button"); b.type="button"; b.className="btn-plain"+(pri?" primary":""); b.textContent=l; b.onclick=fn; A.appendChild(b); };
   if(!bq.done){ mk("Submit",submitBuild,true); mk("Clear",()=>{ bq.paint={}; renderBuild(); }); mk("Skip spot",()=>newBuild(false));
     if(sp.villain){ mk(bq.tip?"Hide their range":"Tip: their range",()=>{ bq.tip=!bq.tip; if(bq.tip) bq.tipUsed=true; renderBuild(); }); A.lastChild.classList.add("bld-tip"); A.lastChild.setAttribute("aria-pressed",!!bq.tip); } }
+  else if(bq.seq){ const nx=BSEQ[bq.idx+1]; if(nx) mk(`Next: ${nx} ▸`,()=>newBuild(false),true); else mk("Start again from UTG",()=>{ seqStart(); newBuild(true); },true); mk("Try this position again",()=>newBuild(true)); }
   else { mk("Next spot",()=>newBuild(false),true); mk("Try this spot again",()=>newBuild(true)); }
   updBuildCount();
   Rr.innerHTML=""; const duo=document.createElement("div"); duo.className="duo";
@@ -3080,6 +3115,8 @@ function renderBuild0(){ showBuildUI(true); if(!bq) return newBuild0(false);
   if(bq.done){ const r=bq.res, sc=Math.round(r.score*100); const sm=document.createElement("div"); sm.className="bld-res "+(sc>=90?"good":sc>=70?"ok":"bad");
     sm.innerHTML=`<b>${sc}%</b> of the hands that matter are right <span class="muted">(weighted by combos)</span><br>`+
       `<span class="bm-key bm-miss"></span> Missed ${r.cnt.miss} · <span class="bm-key bm-extra"></span> Shouldn't be played ${r.cnt.extra} · <span class="bm-key bm-wrong"></span> Wrong action ${r.cnt.wrong}`;
+    if(r.added) sm.innerHTML+=`<br>New at ${esc(bq.seat)}: found <b>${r.addedHit.length} of ${r.added.length}</b>`+(r.added.length>r.addedHit.length?` <span class="muted">· missed ${r.added.filter(h=>!r.addedHit.includes(h)).join(" ")}</span>`:"");
+    if(bq.seq&&!BSEQ[bq.idx+1]){ const sc2=bq.scores.filter(x=>x!=null); sm.innerHTML+=`<br><b>UTG → SB done:</b> average ${Math.round(sc2.reduce((a,b)=>a+b,0)/sc2.length)}% (${bq.scores.join("% · ")}%)`; }
     if(bq.tipUsed) sm.innerHTML+=`<br><span class="muted">Tip used: you looked at their range</span>`;
     mine.insertBefore(sm,gb); }
   duo.appendChild(mine);

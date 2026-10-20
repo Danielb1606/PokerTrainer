@@ -667,6 +667,15 @@ body.ask-open .ask-fab{display:none}
 /* Ranges: trimmed */
 #rgCards{display:none}
 #view-ranges .card-top .sub{display:none}
+.pv-grid .c{color:var(--fold-ink)}
+.pv-grid .c.pv-call,.sw.pv-call{background:#2f9a68;color:#fff}
+.pv-grid .c.pv-rf,.sw.pv-rf{background:#c98a1e;color:#fff}
+.pv-grid .c.pv-rc,.sw.pv-rc{background:#c73a4d;color:#fff}
+.pv-grid .c.pv-rr,.sw.pv-rr{background:#7b45d1;color:#fff}
+.sw.pv-fold{background:var(--fold);box-shadow:inset 0 0 0 1px var(--line)}
+.pv-grid .c.pv-mix{opacity:.6;background-image:repeating-linear-gradient(135deg,transparent 0 5px,rgba(0,0,0,.18) 5px 7px)}
+.pv-legend{gap:4px 14px;color:var(--ink)}
+.pv-legend .sw{display:inline-block;width:11px;height:11px;border-radius:2px;vertical-align:-1px;margin-right:5px}
 .rg-pcts{display:flex;flex-wrap:wrap;gap:2px 10px;font-size:12px;color:var(--muted);margin-top:6px;font-variant-numeric:tabular-nums}
 .rg-pcts b{color:var(--ink);font-weight:600}
 .rg-pcts .sw{width:10px;height:10px;margin-right:4px;display:inline-block;vertical-align:-1px}
@@ -943,6 +952,23 @@ body{padding-bottom:16px!important}
   .rg-pick{grid-template-columns:repeat(13,minmax(0,1fr))}
 }
 
+/* ===== phone layer: features added after 2026-10-11 ===== */
+@media (max-width:640px){
+  /* equity strip: two stacked rows instead of one wide line */
+  .eqstrip{height:auto!important;flex-direction:column;gap:8px;padding:8px 12px 10px;overflow:visible}
+  .eqstrip.eq-spacer{display:none}
+  .eqstrip .eqt,.eqstrip .eqt.wide{max-width:none;width:100%}
+  .eqstrip .eql{font-size:10px;white-space:normal}
+  .eqstrip .eqn{flex-wrap:wrap;white-space:normal;gap:4px 10px}
+  .eqstrip .eqv{font-size:26px}
+  .eqstrip .eqbar{width:auto;flex:1 1 90px;min-width:80px}
+  /* colour-view switch and legend wrap */
+  .cmode{flex-wrap:wrap}
+  .rg-pcts{flex-wrap:wrap}
+  /* bet-size badges */
+  .act-main{font-size:13px;padding:4px 9px}
+  .act-alt{white-space:normal;font-size:12px}
+}
 /* ===== phone layer: features added after 2026-10-11 ===== */
 @media (max-width:640px){
   /* equity strip: two stacked rows instead of one wide line */
@@ -3494,17 +3520,18 @@ wireAskInline();
   askSetReady(true); }catch(e){} })();
 
 // ---------- RANGES view: both players' likely ranges from the active profile, and how a board hits them ----------
-const RG_POTS={srp:"Single-raised pot","3bp":"3-bet pot","4bp":"4-bet pot",none:"No pot yet"};   // none: just each seat's first-in (RFI) range
+const RG_POTS={srp:"Single-raised pot","3bp":"3-bet pot","4bp":"4-bet pot",none:"No pot yet",vs:"Versus"};   /* vs: each seat's whole preflop plan against the other on one chart */   // none: just each seat's first-in (RFI) range
 let rg={pot:"srp",open:"BTN",other:"BB",me:"open",board:[]};
 function rgWeight(sp,h,acts){ const m=sp.hero.mix&&sp.hero.mix[h]; if(m) return acts.reduce((a,k)=>a+(m[k]||0),0)/100;
   const a=actionOf(sp.hero.layers,h); return a&&acts.includes(a.cls)?(a.edge?0.5:1):0; }
 // hero seat h vs opponent seat o: the earlier seat preflop is the opener
 function rgSetPair(h,o){ const hi=SEATS.indexOf(h), oi=SEATS.indexOf(o); if(hi<oi){ rg.open=h; rg.other=o; rg.me="open"; } else { rg.open=o; rg.other=h; rg.me="other"; } }
-function rgPairOK(h,o,pot){ if(h===o) return false; if(pot==="none") return true; const op=SEATS.indexOf(h)<SEATS.indexOf(o)?h:o; if(op==="BB") return false;
+function rgPairOK(h,o,pot){ if(h===o) return false; if(pot==="none"||pot==="vs") return true; const op=SEATS.indexOf(h)<SEATS.indexOf(o)?h:o; if(op==="BB") return false;
   const sv={pot:rg.pot,open:rg.open,other:rg.other,me:rg.me}; try{ rg.pot=pot; rgSetPair(h,o); const r=rgRanges(); return Object.keys(r.you.w).length>0&&Object.keys(r.them.w).length>0; }catch(e){ return false; } finally{ Object.assign(rg,sv); } }
 // Ranges -> Charts: the hero chart that leads to this pot (inverse of chartToRange)
 function rangeToChart(){ const H=rg.me==="open"?rg.open:rg.other, O=rg.me==="open"?rg.other:rg.open;
   if(rg.pot==="none") return H==="BB"?{seat:"BB",type:"open",vill:"SB"}:{seat:H,type:"rfi",vill:null};
+  if(rg.pot==="vs") return rg.me==="open"?{seat:H,type:"rfi",vill:null}:{seat:H,type:"open",vill:O};
   if(rg.pot==="srp") return rg.me==="open"?{seat:H,type:"rfi",vill:null}:{seat:H,type:"open",vill:O};
   if(rg.pot==="3bp") return rg.me==="open"?{seat:H,type:"3bet",vill:O}:{seat:H,type:"open",vill:O};
   return rg.me==="open"?{seat:H,type:"3bet",vill:O}:{seat:H,type:"4bet",vill:O}; }
@@ -3519,6 +3546,7 @@ function rgRanges(){ const MY=chartData(), OP=oppData(), o=rg.open, t=rg.other; 
     const rfi=(seat,D,raw)=>{ const w={}; if(seat==="BB"){ const sp=getSpot("BB","open","SB",D,raw); ALLHANDS.forEach(h=>{ const x=rgWeight(sp,h,["call","val","bluff"]); if(x>0) w[h]=Math.min(1,x); }); const S3=(sp.plan&&sp.plan.size)||"?", so=sz0(()=>getSpot("SB","rfi",null,D,raw)); return {seat,line:"BB vs SB open (calls + 3-bets)",w,acts:{main:"3-BET TO "+S3,alt:"or CALL vs SB "+so}}; }   /* BB never opens: show its defence against the SB instead */ const sp=getSpot(seat,"rfi",null,D,raw); ALLHANDS.forEach(h=>{ const x=rgWeight(sp,h,["open"]); if(x>0) w[h]=Math.min(1,x); }); return {seat,line:seat+" opens (first in)",w,acts:{main:"OPEN TO "+((sp.plan&&sp.plan.size)||"?")}}; };
     const sz0=f=>{ try{ const sp=f(); return (sp.plan&&sp.plan.size)||"?"; }catch(e){ return "?"; } };
     return {you:rfi(H,MY,false),them:rfi(O,OP,true)}; }
+  if(rg.pot==="vs"){ const P=rgPlan(o,t,Do,Dt,ro_,rt_); return rg.me==="open"?{you:P.op,them:P.df}:{you:P.df,them:P.op}; }
   if(rg.pot==="srp"){ const ro=getSpot(o,"rfi",null,Do,ro_), rc=getSpot(t,"open",o,Dt,rt_);
     A=h=>rgWeight(ro,h,["open"]); B=h=>rgWeight(rc,h,["call"]); la=o+" opens"; lb=t+" calls"; }
   else if(rg.pot==="3bp"){ const r3=getSpot(t,"open",o,Dt,rt_), rc=getSpot(o,"3bet",t,Do,ro_);
@@ -3531,6 +3559,39 @@ function rgRanges(){ const MY=chartData(), OP=oppData(), o=rg.open, t=rg.other; 
   else if(rg.pot==="3bp"){ ro.acts={main:"CALL 3-BET",call:true,alt:"opened "+S.open+", faces "+S.three}; rt.acts={main:"3-BET TO "+S.three,alt:"vs "+o+" open "+S.open}; }
   else { ro.acts={main:"4-BET TO "+S.four,alt:"opened "+S.open+", faced "+S.three}; rt.acts={main:"CALL 4-BET",call:true,alt:"3-bet to "+S.three+", faces "+S.four}; }
   return rg.me==="open"?{you:ro,them:rt}:{you:rt,them:ro}; }
+/* Versus: one chart per seat with its whole preflop plan against the other seat.
+   Opener: fold / open then fold to the 3-bet / open then call it / open then 4-bet.
+   Other seat: fold / call / 3-bet then fold to the 4-bet / 3-bet then call it / 3-bet then 5-bet or all-in.
+   Each square shows the most likely line; mixed squares are faded and the tooltip has the frequencies. */
+const PV_CATS={op:["pv-rf","pv-rc","pv-rr"],df:["pv-call","pv-rf","pv-rc","pv-rr"]};
+function rgPlan(o,t,Do,Dt,ro_,rt_){ const S=rgSizes(o,t,Do,Dt,ro_,rt_), pc=x=>Math.round(x*100)+"%";
+  const sp=(f)=>{ try{ return f(); }catch(e){ return null; } };
+  const rfi=sp(()=>getSpot(o,"rfi",null,Do,ro_)), f3=sp(()=>getSpot(o,"3bet",t,Do,ro_)), vs=sp(()=>getSpot(t,"open",o,Dt,rt_)), f4=sp(()=>getSpot(t,"4bet",o,Dt,rt_));
+  const W=(s,h,a)=>s?Math.min(1,rgWeight(s,h,a)):0, AGG=["val","bluff","allin"];
+  const allinOf=(s)=>{ const P=s&&s.plan||{}; return !!(P.allin&&(!P.size||P.allinF>=P.sizeF)); };
+  const op={seat:o,line:o+" opens: whole plan vs "+t,w:{},plan:{cat:{},mix:{},tip:{}},cnt:{}}, df={seat:t,line:t+" vs "+o+" open: whole plan",w:{},plan:{cat:{},mix:{},tip:{}},cnt:{}};
+  const best=a=>a.reduce((m,x)=>x[1]>m[1]?x:m);
+  ALLHANDS.forEach(h=>{ const c=h.length===2?6:h[2]==="s"?4:12;
+    // opener
+    const pO=W(rfi,h,["open"]); if(pO>0) op.w[h]=pO;
+    if(pO>=0.5){ const r=W(f3,h,AGG), cl=W(f3,h,["call"]), fd=Math.max(0,1-r-cl); const [k,pk]=best([["pv-rr",r],["pv-rc",cl],["pv-rf",fd]]);
+      op.plan.cat[h]=k; op.plan.mix[h]=pO<0.7||pk<0.7; op.plan.tip[h]=`${h}: open ${pc(pO)} · vs ${t} 3-bet: `+[["4-bet",r],["call",cl],["fold",fd]].filter(x=>x[1]>0.005).map(x=>x[0]+" "+pc(x[1])).join(", "); op.cnt[k]=(op.cnt[k]||0)+c; }
+    else if(pO>0){ op.plan.tip[h]=`${h}: open ${pc(pO)} (mostly fold)`; op.plan.mix[h]=true; }
+    // other seat
+    const r3=W(vs,h,AGG), c3=W(vs,h,["call"]), f3x=Math.max(0,1-r3-c3); if(r3+c3>0) df.w[h]=Math.min(1,r3+c3);
+    const [k1,p1]=best([["fold",f3x],["pv-call",c3],["r",r3]]);
+    if(k1==="pv-call"){ df.plan.cat[h]="pv-call"; df.plan.mix[h]=p1<0.7; df.cnt["pv-call"]=(df.cnt["pv-call"]||0)+c; }
+    else if(k1==="r"){ const r5=W(f4,h,AGG), c5=W(f4,h,["call"]), f5=Math.max(0,1-r5-c5); const [k2,p2]=best([["pv-rr",r5],["pv-rc",c5],["pv-rf",f5]]);
+      df.plan.cat[h]=k2; df.plan.mix[h]=p1<0.7||p2<0.7; df.cnt[k2]=(df.cnt[k2]||0)+c; }
+    else if(r3+c3>0.005) df.plan.mix[h]=true;
+    if(r3+c3>0.005) df.plan.tip[h]=`${h}: vs ${o} open: `+[["3-bet",r3],["call",c3],["fold",f3x]].filter(x=>x[1]>0.005).map(x=>x[0]+" "+pc(x[1])).join(", ")+(r3>0.005&&f4?` · vs 4-bet: `+[[allinOf(f4)?"all-in":"5-bet",W(f4,h,AGG)],["call",W(f4,h,["call"])],["fold",Math.max(0,1-W(f4,h,AGG)-W(f4,h,["call"]))]].filter(x=>x[1]>0.005).map(x=>x[0]+" "+pc(x[1])).join(", "):"");
+  });
+  const four=allinOf(f3)?"4-bet all-in":"4-bet to "+S.four, five=allinOf(f4)?"all-in":"5-bet";
+  op.plan.labels={"pv-rf":`Open ${S.open}, fold to a 3-bet`,"pv-rc":`Open, call a 3-bet to ${S.three}`,"pv-rr":`Open, ${four} vs a 3-bet`};
+  df.plan.labels={"pv-call":`Call the ${S.open} open`,"pv-rf":`3-bet to ${S.three}, fold to a 4-bet`,"pv-rc":`3-bet, call a 4-bet to ${S.four}`,"pv-rr":`3-bet, ${five} vs a 4-bet`};
+  op.plan.order=PV_CATS.op; df.plan.order=PV_CATS.df;
+  op.acts={main:"OPEN "+S.open,alt:`vs ${t} 3-bet to ${S.three}: call, ${four} or fold`}; df.acts={main:"VS "+o+" OPEN "+S.open,alt:`call or 3-bet to ${S.three}; vs 4-bet: call, ${five} or fold`};
+  return {op,df}; }
 /* bet sizes for the Ranges cards: the same sizes the Charts tab shows (from each side's own chart data) */
 function rgSizes(o,t,Do,Dt,ro_,rt_){ const sz=(f,d)=>{ try{ const sp=f(); return (sp.plan&&sp.plan.size)||d; }catch(e){ return d; } };
   return {open:sz(()=>getSpot(o,"rfi",null,Do,ro_),"?"), three:sz(()=>getSpot(t,"open",o,Dt,rt_),threeBetSize(o,t)), four:sz(()=>getSpot(o,"3bet",t,Do,ro_),"?")}; }
@@ -3569,12 +3630,18 @@ function rgGrid(r,on,cls,mark){ const g=document.createElement("div"); g.classNa
     else d.title=h+" · not in range";
     g.appendChild(d); });
   return g; }
+function rgPlanGrid(r,mark){ const g=document.createElement("div"); g.className="grid pv-grid"; const P=r.plan;
+  ALLHANDS.forEach((h,i)=>{ const row=Math.floor(i/13),col=i%13,d=document.createElement("div"); const k=P.cat[h];
+    d.className="c"+(row===col?" pair":"")+(mark&&h===mark?" rg-hand":"")+(k?" "+k:"")+(k&&P.mix[h]?" pv-mix":""); d.textContent=h;
+    d.title=P.tip[h]||(h+" · fold"); g.appendChild(d); });
+  return g; }
 function rgCard(tag,r,on,cls,hero,mark){ const el=document.createElement("article"); el.className="card "+(hero?"hero":"villain");
   const n=rgCombos(r,on?new Set(rg.board):null);
-  el.innerHTML=`<div class="card-top"><div><div class="tag">${tag}</div><h3>${esc(r.line)}</h3><div class="sub">${on?"Coloured by what each hand has on this board":"Darker = played more often"}</div></div><div class="pct">${(n/1326*100).toFixed(1)}% · ${Math.round(n)} combos</div></div>`;
+  el.innerHTML=`<div class="card-top"><div><div class="tag">${tag}</div><h3>${esc(r.line)}</h3><div class="sub">${on?"Coloured by what each hand has on this board":r.plan?"Each square: what you do first, then what you do if they raise again":"Darker = played more often"}</div></div><div class="pct">${(n/1326*100).toFixed(1)}% · ${Math.round(n)} combos</div></div>`;
   if(r.acts){ const a=r.acts, row=document.createElement("div"); row.className="act-row";
     row.innerHTML=`<span class="act-main${a.call?" act-call":""}">${esc(a.main)}</span>`+(a.alt?`<span class="act-alt">${esc(a.alt)}</span>`:""); el.appendChild(row); }
-  const gb=document.createElement("div"); gb.className="gridbox"; gb.appendChild(rgGrid(r,on,cls,mark)); el.appendChild(gb);
+  const gb=document.createElement("div"); gb.className="gridbox"; gb.appendChild(r.plan&&!on?rgPlanGrid(r,mark):rgGrid(r,on,cls,mark)); el.appendChild(gb);
+  if(r.plan&&!on){ const L=r.plan.labels, pc=document.createElement("div"); pc.className="rg-pcts pv-legend"; pc.innerHTML=r.plan.order.map(k=>`<span><i class="sw ${k}"></i>${esc(L[k])} <b>${((r.cnt[k]||0)/13.26).toFixed(1)}%</b></span>`).join("")+`<span><i class="sw pv-fold"></i>Fold</span>`; el.appendChild(pc); }
   if(on){ const C=on.cats||SCATS, L=k=>SLABEL[k]||VLABEL[k]; const pc=document.createElement("div"); pc.className="rg-pcts"; pc.innerHTML=C.map(k=>`<span title="${L(k)}"><i class="sw st-${k}"></i><b>${(on.pct[k]*100).toFixed(0)}%</b>${on.cats&&on.cats!==SCATS?` <span class="muted">${L(k).split(":")[0]}</span>`:""}</span>`).join("");
     const bar=document.createElement("div"); bar.className="rg-bar"; bar.innerHTML=C.map(k=>`<i class="sw st-${k}" style="width:${(on.pct[k]*100).toFixed(1)}%;border-radius:0" title="${L(k)} ${(on.pct[k]*100).toFixed(0)}%"></i>`).join(""); el.appendChild(bar); el.appendChild(pc); }
   else { const ph=document.createElement("div"); ph.style.visibility="hidden"; ph.innerHTML=`<div class="rg-bar"><i class="sw" style="width:100%"></i></div><div class="rg-pcts"><span><b>0%</b></span></div>`; ph.style.display="flex"; ph.style.flexDirection="column"; ph.style.gap="10px"; el.appendChild(ph); }
@@ -3597,7 +3664,7 @@ function renderRanges(){ try{ save(); }catch(e){} rgPostflopPot();
   if(!okOpps(H).includes(O)){ const l=okOpps(H); O=l.includes("BB")?"BB":l.includes("BTN")?"BTN":l[0]; }
   rgSetPair(H,O);
   const me=document.getElementById("rgMe"); me.innerHTML=""; SEATS.forEach(x=>segBtn(me,x,H===x,!okOpps(x).length,()=>{ const l=okOpps(x); const o=l.includes(O)?O:l.includes("BB")?"BB":l.includes("BTN")?"BTN":l[0]; rgSetPair(x,o); renderRanges(); }));
-  const pots=document.getElementById("rgPot"); pots.innerHTML=""; const PSHORT={srp:"SRP","3bp":"3-bet","4bp":"4-bet",none:"None"};
+  const pots=document.getElementById("rgPot"); pots.innerHTML=""; const PSHORT={srp:"SRP","3bp":"3-bet","4bp":"4-bet",none:"None",vs:"Versus"};
   Object.keys(RG_POTS).forEach(k=>segBtn(pots,PSHORT[k],rg.pot===k,!SEATS.some(x=>SEATS.some(o=>o!==x&&rgPairOK(x,o,k))),()=>{ rg.pot=k; renderRanges(); }));
   // any seat you can meet in some pot is clickable; if it can't happen in this pot, the pot switches to one where it can
   const opp=document.getElementById("rgOpp"); opp.innerHTML=""; const ol=okOpps(H), POTS=["srp","3bp","4bp"];
@@ -3608,9 +3675,9 @@ function renderRanges(){ try{ save(); }catch(e){} rgPostflopPot();
   const pk=document.getElementById("rgPick"); pk.innerHTML=""; SUITCH.split("").forEach(su=>R.split("").forEach(r=>{ const c=r+su, b=document.createElement("button"); b.type="button"; b.className=SUITSYM[su][1]; b.textContent=r+SUITSYM[su][0]; b.setAttribute("aria-pressed",rg.board.includes(c));
     b.onclick=()=>{ if(rg.board.includes(c)) rg.board=rg.board.filter(x=>x!==c); else if(rg.board.length<5) rg.board.push(c); renderRanges(); }; pk.appendChild(b); }));
   const inp=document.getElementById("rgIn"); if(document.activeElement!==inp) inp.value=rg.board.join("");
-  const {you,them}=rgRanges(); const aggr=rg.pot==="none"?null:rg.pot==="srp"?rg.open:rg.pot==="3bp"?rg.other:rg.open;
-  document.getElementById("rgName").textContent=RG_POTS[rg.pot]+": "+(rg.pot==="none"?`${H} and ${O} first-in ranges`:rg.pot==="srp"?`${rg.open} opens, ${rg.other} calls`:rg.pot==="3bp"?`${rg.open} opens, ${rg.other} 3-bets, ${rg.open} calls`:`${rg.open} opens, ${rg.other} 3-bets, ${rg.open} 4-bets, ${rg.other} calls`);
-  document.getElementById("rgMeta").textContent=`Opponent: ${officialData()?oppName():activeProfile.name} · ${aggr?aggr+" has the lead":"nobody has bet yet"}`;
+  const {you,them}=rgRanges(); const aggr=rg.pot==="none"?null:rg.pot==="vs"?(rg.board.length>=3?rg.open:null):rg.pot==="srp"?rg.open:rg.pot==="3bp"?rg.other:rg.open;
+  document.getElementById("rgName").textContent=RG_POTS[rg.pot]+": "+(rg.pot==="vs"?`${H} vs ${O}, whole preflop plan`:rg.pot==="none"?`${H} and ${O} first-in ranges`:rg.pot==="srp"?`${rg.open} opens, ${rg.other} calls`:rg.pot==="3bp"?`${rg.open} opens, ${rg.other} 3-bets, ${rg.open} calls`:`${rg.open} opens, ${rg.other} 3-bets, ${rg.open} 4-bets, ${rg.other} calls`);
+  document.getElementById("rgMeta").textContent=`Opponent: ${officialData()?oppName():activeProfile.name} · ${rg.pot==="vs"&&!aggr?rg.open+" acts first":aggr?aggr+" has the lead":"nobody has bet yet"}`;
   document.getElementById("rgCards").innerHTML=rg.board.map(cardHTML).join("");
   const on=rg.board.length>=3, HAND=(rg.hand||[]).filter(c=>!rg.board.includes(c)), oy=on?rgOnBoard(you,rg.board):null, ot2=on?rgOnBoard(them,rg.board,HAND):null;
   const view=rg.cview&&RG_VIEWS[rg.cview]?rg.cview:"simple", vsOK=HAND.length===2, v=view==="vs"&&!vsOK?"simple":view;
@@ -3619,7 +3686,7 @@ function renderRanges(){ try{ save(); }catch(e){} rgPostflopPot();
   const sw=`<span class="cmode" role="group" aria-label="Colours">${Object.keys(RG_VIEWS).map(k=>`<button type="button" data-v="${k}" aria-pressed="${k===v}"${k==="vs"&&!vsOK?' disabled title="Needs your two cards (Read or click them in)"':""}>${RG_VIEWS[k]}</button>`).join("")}</span>`;
   const lg=k=>`<span><i class="sw st-${k}"></i>${SLABEL[k]||VLABEL[k]}</span>`;
   document.getElementById("rgLegend").innerHTML=on?sw+(v==="detail"?SCATS.map(lg).join(""):v==="simple"?["strong","mid","weak"].map(lg).join(""):`<span class="muted">You:</span>`+["strong","mid","weak"].map(k=>lg(k).replace(/:.*?</,"<")).join("")+`<span class="muted">Them:</span>`+["beat","chase","behind"].map(lg).join(""))+`<span title="Faded = only played part of the time"><i class="sw st-out"></i>Not in range</span>`
-    :`<span><i class="sw" style="background:var(--val)"></i>Raised (betting lead)</span><span><i class="sw" style="background:var(--call)"></i>Called</span><span class="muted">Lighter = mixed or edge hand (edge hands count as 50%)</span>`;
+    :rg.pot==="vs"?`<span class="muted">Each chart is that seat's whole plan: first action, then what to do if raised again. Striped = mixed, hover a square for the exact frequencies.</span>`:`<span><i class="sw" style="background:var(--val)"></i>Raised (betting lead)</span><span><i class="sw" style="background:var(--call)"></i>Called</span><span class="muted">Lighter = mixed or edge hand (edge hands count as 50%)</span>`;
   document.querySelectorAll("#rgLegend .cmode button").forEach(b=>b.onclick=()=>{ if(b.disabled) return; rg.cview=b.dataset.v; renderRanges(); });
   const duo=document.getElementById("rgDuo"); duo.innerHTML=""; duo.appendChild(rgCard("Your range",you,showY,youCls,true,HAND.length===2?handClass(HAND):null)); duo.appendChild(rgCard("Their range",them,showT,themCls,false));
   const eqBox=document.getElementById("rgEq"); eqBox.innerHTML="";
@@ -3856,7 +3923,7 @@ async function readFromImageSource(src,w,h){
   const k=w>1800?1800/w:1; const {img,canvas}=imageDataFrom(src,Math.round(w*k),Math.round(h*k));
   const T=readTable(img), cards=T.board, hand=T.hand;
   rg.hand=hand.length===2?hand.map(c=>c.card):[];
-  rg.pot=cards.length>=3?"srp":"none";   /* preflop: first-in ranges. With a flop: a single-raised pot, or the next pot these seats can meet in (picked in rgApplySeats) */
+  rg.pot=cards.length>=3?"srp":"vs";   /* preflop: first-in ranges. With a flop: a single-raised pot, or the next pot these seats can meet in (picked in rgApplySeats) */
   let seatTxt=rgApplySeats(T.seats,hand.length===2);
   if(!seatTxt&&(cards.length||hand.length)) seatTxt=` · <span class="muted">seat not found (${T.seatsWhy==="nodealer"?"no D button seen":T.seatsWhy==="far"?"D button not next to a seat":"couldn't measure the table"})</span>`;
   window.__lastSeats={seats:T.seats,why:T.seatsWhy};

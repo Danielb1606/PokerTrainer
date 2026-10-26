@@ -1156,6 +1156,23 @@ body{padding-bottom:16px!important}
   .act-main{font-size:13px;padding:4px 9px}
   .act-alt{white-space:normal;font-size:12px}
 }
+/* ===== phone layer: features added after 2026-10-11 ===== */
+@media (max-width:640px){
+  /* equity strip: two stacked rows instead of one wide line */
+  .eqstrip{height:auto!important;flex-direction:column;gap:8px;padding:8px 12px 10px;overflow:visible}
+  .eqstrip.eq-spacer{display:none}
+  .eqstrip .eqt,.eqstrip .eqt.wide{max-width:none;width:100%}
+  .eqstrip .eql{font-size:10px;white-space:normal}
+  .eqstrip .eqn{flex-wrap:wrap;white-space:normal;gap:4px 10px}
+  .eqstrip .eqv{font-size:26px}
+  .eqstrip .eqbar{width:auto;flex:1 1 90px;min-width:80px}
+  /* colour-view switch and legend wrap */
+  .cmode{flex-wrap:wrap}
+  .rg-pcts{flex-wrap:wrap}
+  /* bet-size badges */
+  .act-main{font-size:13px;padding:4px 9px}
+  .act-alt{white-space:normal;font-size:12px}
+}
 </style>
 
 </head>
@@ -4034,8 +4051,14 @@ function brNewBadge(img,p){ const {width:W,height:H,data:D}=img, h=p.y1-p.y0+1; 
   for(let y=ya;y<=yb;y++) for(let x=xa;x<=xb;x++){ const i=(y*W+x)*4; if(D[i]>225&&D[i+1]>180&&D[i+1]<228&&D[i+2]<115) n++; }
   return n>=h*h*0.04; }
 // cards in front of a seat: dark backs with the orange logo (others), or coloured card faces (you)
-function brHeroIn(img,g){ const hx=g.cx+BR_SEATS[0][0]*g.ch, hy=g.cy+BR_SEATS[0][1]*g.ch;
-  const c=brFindCards(img).filter(k=>Math.abs((k.x0+k.x1)/2-hx)<g.ch*1.1&&Math.abs((k.y0+k.y1)/2-(hy-g.ch*0.3))<g.ch*0.9&&k.h>g.ch*0.25); return c.length>=2; }
+// any = your two cards are in front of you; live = and they aren't greyed out (Ignition greys them when you fold:
+// live cards have pure-white rank letters and borders, greyed ones have none)
+function brHeroCards(img,g){ const hx=g.cx+BR_SEATS[0][0]*g.ch, hy=g.cy+BR_SEATS[0][1]*g.ch, {width:W,data:D}=img;
+  const c=brFindCards(img).filter(k=>Math.abs((k.x0+k.x1)/2-hx)<g.ch*1.1&&Math.abs((k.y0+k.y1)/2-(hy-g.ch*0.3))<g.ch*0.9&&k.h>g.ch*0.25);
+  if(c.length<2) return {any:false,live:false};
+  const st=g.ch<110?1:2; let n=0, wht=0; c.forEach(k=>{ for(let y=k.y0;y<=k.y1;y+=st) for(let x=k.x0;x<=k.x1;x+=st){ const i=(y*W+x)*4; n++; if(D[i]>200&&D[i+1]>200&&D[i+2]>200) wht++; } });
+  return {any:true,live:n>0&&wht/n>=0.01}; }   /* measured: greyed 0%, live 6-12% */
+function brHeroIn(img,g){ return brHeroCards(img,g).live; }
 /* One look at the poker window. cache keeps the table geometry for this window size, so a frame with no cards showing still works.
    Returns {ok:true,seats:[{i,pos,hero,inHand,tag:{x,y,h}}]} or {ok:false,why}. */
 function ovScan(img,cache){ cache=cache||{}; const key=img.width+"x"+img.height; let g=cache.g&&cache.key===key?cache.g:null;
@@ -4047,8 +4070,8 @@ function ovScan(img,cache){ cache=cache||{}; const key=img.width+"x"+img.height;
   if(g.ch<110){ k=Math.min(3,Math.ceil(110/g.ch)); if(k>1){ im=brScaleImg(im,k); gg={cx:gg.cx*k,cy:gg.cy*k,ch:gg.ch*k}; } }
   const ds=brFindDealer(im,gg,true), d=ds.find(c=>brSeatAt(gg,c.x,c.y)!=null); if(!d) return {ok:false,why:"no dealer button found"};
   const dk=brSeatAt(gg,d.x,d.y), vac=brFindVacant(im,gg); const backs=brFindBacks(im,gg).map(b=>brSeatAt(gg,b.x,b.y)).filter(j=>j!=null&&j!==0);
-  const coins=brFindCoins(im,gg,d).map(c=>brSeatAngle(gg,c.x,c.y)); const heroIn=brHeroIn(img,g);
-  const out=brSittingOut(dk,vac,coins,true,"ov"+dk,backs.concat(heroIn?[0]:[]));
+  const coins=brFindCoins(im,gg,d).map(c=>brSeatAngle(gg,c.x,c.y)); const hc=brHeroCards(img,g), heroIn=hc.live;
+  const out=brSittingOut(dk,vac,coins,true,"ov"+dk,backs.concat(hc.any?[0]:[]));   /* folded (greyed cards) still means you were dealt in */
   const avoid={x:d.x/k+cx0,y:d.y/k+cy0,r:(d.r||g.ch*0.3*k)/k*1.4}, pills={}, fresh=[];
   for(let i=0;i<6;i++){ if(vac.includes(i)) continue; const ax=g.cx+BR_SEATS[i][0]*g.ch, ay=g.cy+BR_SEATS[i][1]*g.ch; pills[i]=brFindPill(img,g,ax,ay,avoid);
     if(pills[i]&&i!==0&&!backs.includes(i)&&brNewBadge(img,pills[i])) fresh.push(i); }

@@ -1,8 +1,8 @@
 {
   "applicationId": "app.pokertrainer.sixmax",
-  "version": "1.4.9",
+  "version": "1.4.10",
   "resourcesURL": "resources.neu",
-  "sha256": "6542e30ee03f18267e5b9a341d928ebb5e99003e1aec91aeead7b91c0c543303",
-  "notes": "Slicker overlay: bright green BTN, white tag text with a black outline, folded players' pills get a black outline and a cap that matches Ignition's pill exactly.",
+  "sha256": "ee4fa4cb89869af97f8a333220a935d5ac9b412a9ddf9cf20bf8f2bde204c6c5",
+  "notes": "Smooth overlay: labels fade between changes, hide between hands and fade back in when cards are dealt. Outlines now line up exactly with the edge of each tag.",
   "data": {}
 }

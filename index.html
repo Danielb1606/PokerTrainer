@@ -1105,6 +1105,23 @@ body{padding-bottom:16px!important}
   .act-main{font-size:13px;padding:4px 9px}
   .act-alt{white-space:normal;font-size:12px}
 }
+/* ===== phone layer: features added after 2026-10-11 ===== */
+@media (max-width:640px){
+  /* equity strip: two stacked rows instead of one wide line */
+  .eqstrip{height:auto!important;flex-direction:column;gap:8px;padding:8px 12px 10px;overflow:visible}
+  .eqstrip.eq-spacer{display:none}
+  .eqstrip .eqt,.eqstrip .eqt.wide{max-width:none;width:100%}
+  .eqstrip .eql{font-size:10px;white-space:normal}
+  .eqstrip .eqn{flex-wrap:wrap;white-space:normal;gap:4px 10px}
+  .eqstrip .eqv{font-size:26px}
+  .eqstrip .eqbar{width:auto;flex:1 1 90px;min-width:80px}
+  /* colour-view switch and legend wrap */
+  .cmode{flex-wrap:wrap}
+  .rg-pcts{flex-wrap:wrap}
+  /* bet-size badges */
+  .act-main{font-size:13px;padding:4px 9px}
+  .act-alt{white-space:normal;font-size:12px}
+}
 </style>
 
 </head>
@@ -3832,7 +3849,7 @@ function readTable(img){ const ok=x=>x.glyph&&x.rank!=="?";
   // a small table (small window): look for the button, bets and seats in a picture blown up 2-3x, so the little "D" has enough pixels
   if(g&&g.ch<110&&typeof document!=="undefined"){ const k=Math.min(3,Math.ceil(110/g.ch)); if(k>1){ img=brScaleImg(img,k); g={cx:g.cx*k,cy:g.cy*k,ch:g.ch*k}; } }
   let seatsWhy=g?"nodealer":"nogeom";
-  if(g){ const ds=brFindDealer(img,g,true); if(ds.length) seatsWhy="far"; const d=ds.find(c=>brSeatAt(g,c.x,c.y)!=null); if(d){ const k=brSeatAt(g,d.x,d.y); if(k!=null){ seatsWhy=""; const vac=brFindVacant(img,g); const coins=brFindCoins(img,g,d); const out=brSittingOut(k,vac,coins.map(c=>brSeatAngle(g,c.x,c.y)),board.length===0,hand.map(c=>c._r&&c._r.card).join("")); const P=brPositions(k,vac.concat(out));
+  if(g){ const ds=brFindDealer(img,g,true); if(ds.length) seatsWhy="far"; const d=ds.find(c=>brSeatAt(g,c.x,c.y)!=null); if(d){ const k=brSeatAt(g,d.x,d.y); if(k!=null){ seatsWhy=""; const vac=brFindVacant(img,g); const coins=brFindCoins(img,g,d); const dealt=[...new Set(brFindBacks(img,g).map(b=>brSeatAt(g,b.x,b.y)).filter(j=>j!=null&&j!==0))].concat(hand.length===2?[0]:[]); const out=brSittingOut(k,vac,coins.map(c=>brSeatAngle(g,c.x,c.y)),board.length===0,hand.map(c=>c._r&&c._r.card).join(""),dealt); const P=brPositions(k,vac.concat(out));
         const opp=[...new Set(brFindBacks(img,g).map(b=>brSeatAt(g,b.x,b.y)).filter(j=>j!=null&&j!==0&&P[j]))];
         seats={dealer:k,vacant:vac,out,players:6-vac.length-out.length,you:P[0],opps:opp.map(j=>P[j]),dx:d.x,dy:d.y}; } } }
   return {board:board.map(c=>c._r), hand:hand.map(c=>c._r), seats, seatsWhy}; }
@@ -3870,7 +3887,10 @@ function brFindCoins(img,g,dealer){ const {width:W,height:H,data:D}=img; const l
   return out; }
 // Before the flop the small and big blinds are the first two seats after the button with a bet in front of them.
 // A seat skipped on the way (no bet) is sitting out. Remembered for later streets of the same hand (same button, same hole cards).
-function brSittingOut(k,vac,coinSeats,preflop,handKey){ const has=new Set(coinSeats);
+// dealt = seats with cards in front of them: they're playing this hand, so they're never sitting out (and count as blinds
+// even when their bet chip was put next to a neighbour, e.g. pushed sideways by the timer bar)
+function brSittingOut(k,vac,coinSeats,preflop,handKey,dealt){ dealt=dealt||[]; const out0=brSittingOut0(k,vac,coinSeats.concat(dealt),preflop,handKey); return out0.filter(j=>!dealt.includes(j)); }
+function brSittingOut0(k,vac,coinSeats,preflop,handKey){ const has=new Set(coinSeats);
   if(preflop&&has.size>=2){ const out=[]; let found=0;
     for(let i=1;i<6&&found<2;i++){ const j=(k+i)%6; if(vac.includes(j)) continue; if(has.has(j)) found++; else out.push(j); }
     if(found===2){ window.__brOut={k,out,hand:handKey,at:Date.now()}; return out; } }
@@ -3983,8 +4003,9 @@ function ovScan(img,cache){ cache=cache||{}; const key=img.width+"x"+img.height;
   if(g.ch<110){ k=Math.min(3,Math.ceil(110/g.ch)); if(k>1){ im=brScaleImg(im,k); gg={cx:gg.cx*k,cy:gg.cy*k,ch:gg.ch*k}; } }
   const ds=brFindDealer(im,gg,true), d=ds.find(c=>brSeatAt(gg,c.x,c.y)!=null); if(!d) return {ok:false,why:"no dealer button found"};
   const dk=brSeatAt(gg,d.x,d.y), vac=brFindVacant(im,gg); const backs=brFindBacks(im,gg).map(b=>brSeatAt(gg,b.x,b.y)).filter(j=>j!=null&&j!==0);
-  const coins=brFindCoins(im,gg,d).map(c=>brSeatAngle(gg,c.x,c.y)); const out=brSittingOut(dk,vac,coins,true,"ov"+dk);
-  const P=brPositions(dk,vac.concat(out)); const heroIn=brHeroIn(img,g);
+  const coins=brFindCoins(im,gg,d).map(c=>brSeatAngle(gg,c.x,c.y)); const heroIn=brHeroIn(img,g);
+  const out=brSittingOut(dk,vac,coins,true,"ov"+dk,backs.concat(heroIn?[0]:[]));
+  const P=brPositions(dk,vac.concat(out));
   const seats=[]; let miss=0;
   for(let i=0;i<6;i++){ if(!P[i]&&!out.includes(i)) continue; const ax=g.cx+BR_SEATS[i][0]*g.ch, ay=g.cy+BR_SEATS[i][1]*g.ch; const pill=brFindPill(img,g,ax,ay);
     if(!pill){ miss++; continue; } const h=pill.y1-pill.y0+1;

@@ -1,8 +1,8 @@
 {
   "applicationId": "app.pokertrainer.sixmax",
-  "version": "1.4.4",
+  "version": "1.4.5",
   "resourcesURL": "resources.neu",
-  "sha256": "67876f1e424dc4367f5f8ec95f38c28aa0bf01b0e028ce05978b058b9a4b0c80",
-  "notes": "Ignition's poker client is known from the start, so R and the position overlay work without teaching the trainer first. The overlay finds your table window by itself.",
+  "sha256": "23d391290296d462a7bf5bc82f163d584a114b4867c37975c10c0fcd475b1fab",
+  "notes": "Position fix: a player with cards is never treated as sitting out, so a bet chip pushed sideways by the timer bar can't shift BB (and every later position) one seat round. Applies to the overlay and to R.",
   "data": {}
 }

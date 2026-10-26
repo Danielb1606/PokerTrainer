@@ -1,8 +1,8 @@
 {
   "applicationId": "app.pokertrainer.sixmax",
-  "version": "1.4.5",
+  "version": "1.4.6",
   "resourcesURL": "resources.neu",
-  "sha256": "23d391290296d462a7bf5bc82f163d584a114b4867c37975c10c0fcd475b1fab",
-  "notes": "Position fix: a player with cards is never treated as sitting out, so a bet chip pushed sideways by the timer bar can't shift BB (and every later position) one seat round. Applies to the overlay and to R.",
+  "sha256": "1a3948eb1e0ca1844ac2de0032176875566a43ee4c3c3b49de3855dfc70b5a4b",
+  "notes": "Anchored overlay: each seat's tag is measured once and locked in place, so tags never drift. Resizing the poker window re-measures them; moving it needs nothing.",
   "data": {}
 }

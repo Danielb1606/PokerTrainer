@@ -1,8 +1,8 @@
 {
   "applicationId": "app.pokertrainer.sixmax",
-  "version": "1.3.16",
+  "version": "1.4.0",
   "resourcesURL": "resources.neu",
-  "sha256": "81cc9f962bf5feda54bee3ad2ed44c6927c8a78d91b37bdd3746779ec458e991",
-  "notes": "Ranges: new Versus pot with each seat's whole preflop plan",
+  "sha256": "2376338ced6b6240dcd53a66e6fb000cf7c7766748b7f60c68f2bcada43fc50b",
+  "notes": "Position overlay: Shift+R (or the switch on the Ranges tab) shows position tags over your poker table, updated about once a second. Taskbar dot shows when it's on (green) or can't read the table (amber). Checks that fail twice in a row save a picture to the 'overlay misses' folder next to the app (Shift+W saves one any time, 300 MB max). R and Read now always read your poker window, never whatever is in front; your poker programs are listed with a remove button.",
   "data": {}
 }

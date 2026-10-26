@@ -1,8 +1,8 @@
 {
   "applicationId": "app.pokertrainer.sixmax",
-  "version": "1.4.1",
+  "version": "1.4.2",
   "resourcesURL": "resources.neu",
-  "sha256": "c827d0ac0847de02391d6d1287563e1c7972f519758390eef0cab0ed3016a1ca",
-  "notes": "Fix: in 1.4.0 the table reader stopped as soon as your poker window came to the front, which also broke R and Read and locked the overlay switch. It now restarts itself if it ever stops, and writes any problems to table-reader-log.txt in the Poker Trainer folder.",
+  "sha256": "10d02d52be2ef59f8664d2fdd4d69036afdf50fedd5b5f4b6b31527efd40c7ec",
+  "notes": "Position overlay works on any table colour (e.g. Ignition's navy felt), not just green. Includes the 1.4.1 fix for the table reader stopping.",
   "data": {}
 }

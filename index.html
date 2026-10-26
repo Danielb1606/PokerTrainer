@@ -1088,6 +1088,23 @@ body{padding-bottom:16px!important}
   .act-main{font-size:13px;padding:4px 9px}
   .act-alt{white-space:normal;font-size:12px}
 }
+/* ===== phone layer: features added after 2026-10-11 ===== */
+@media (max-width:640px){
+  /* equity strip: two stacked rows instead of one wide line */
+  .eqstrip{height:auto!important;flex-direction:column;gap:8px;padding:8px 12px 10px;overflow:visible}
+  .eqstrip.eq-spacer{display:none}
+  .eqstrip .eqt,.eqstrip .eqt.wide{max-width:none;width:100%}
+  .eqstrip .eql{font-size:10px;white-space:normal}
+  .eqstrip .eqn{flex-wrap:wrap;white-space:normal;gap:4px 10px}
+  .eqstrip .eqv{font-size:26px}
+  .eqstrip .eqbar{width:auto;flex:1 1 90px;min-width:80px}
+  /* colour-view switch and legend wrap */
+  .cmode{flex-wrap:wrap}
+  .rg-pcts{flex-wrap:wrap}
+  /* bet-size badges */
+  .act-main{font-size:13px;padding:4px 9px}
+  .act-alt{white-space:normal;font-size:12px}
+}
 </style>
 
 </head>
@@ -3946,7 +3963,10 @@ function brFindPill(img,g,ax,ay){ const {width:W,height:H,data:D}=img, ch=g.ch;
   ys.forEach(y=>{ const [l,r]=span(y); if(l!=null){ L=Math.min(L,l); Rr=Math.max(Rr,r); } });
   if(Rr-L<ch*0.8) return null;
   // the seat number circle at the left end is coloured, not grey: walk left over it until the felt starts
-  { const y=Math.round(best.cy), felt=i=>{ const r=D[i],gg=D[i+1],b=D[i+2]; return gg-r>12&&b-r>6&&Math.max(r,gg,b)-Math.min(r,gg,b)<90; }; const run=Math.max(3,Math.round(ch*0.08)); let x=L-1, lim=Math.max(0,Math.round(L-ch*0.6)), n=0, lastNon=L;
+  { const y=Math.round(best.cy), run=Math.max(3,Math.round(ch*0.08)); let x=L-1, lim=Math.max(0,Math.round(L-ch*0.6)), n=0, lastNon=L;
+    // the table's own colour, from just left of where the pill can end (green, navy or any other felt)
+    const bi=(y*W+Math.max(0,lim-2))*4, br=D[bi], bg=D[bi+1], bb=D[bi+2], bOk=Math.max(br,bg,bb)<150;
+    const felt=i=>{ const r=D[i],gg=D[i+1],b=D[i+2]; if(gg-r>12&&b-r>6&&Math.max(r,gg,b)-Math.min(r,gg,b)<90) return true; return bOk&&Math.abs(r-br)+Math.abs(gg-bg)+Math.abs(b-bb)<36; };
     while(x>lim){ if(felt((y*W+x)*4)){ if(++n>=run) break; } else { n=0; lastNon=x; } x--; } L=lastNon; }   /* stop only at a few felt pixels in a row (the digit's edge can look like felt) */
   return {x0:L,x1:Rr,y0:best.top,y1:best.bot}; }
 // cards in front of a seat: dark backs with the orange logo (others), or coloured card faces (you)

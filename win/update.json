@@ -1,8 +1,8 @@
 {
   "applicationId": "app.pokertrainer.sixmax",
-  "version": "1.4.8",
+  "version": "1.4.9",
   "resourcesURL": "resources.neu",
-  "sha256": "8db4d8c852bedbc722f40d7a7638f6babee48d63c8f8fc319a9fe4e6978f5c36",
-  "notes": "No more overlay flicker: the overlay is now attached to your poker table window, so Windows keeps it on top of the table instantly when you click into the table or cards are dealt.",
+  "sha256": "6542e30ee03f18267e5b9a341d928ebb5e99003e1aec91aeead7b91c0c543303",
+  "notes": "Slicker overlay: bright green BTN, white tag text with a black outline, folded players' pills get a black outline and a cap that matches Ignition's pill exactly.",
   "data": {}
 }

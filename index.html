@@ -1071,6 +1071,23 @@ body{padding-bottom:16px!important}
   .act-main{font-size:13px;padding:4px 9px}
   .act-alt{white-space:normal;font-size:12px}
 }
+/* ===== phone layer: features added after 2026-10-11 ===== */
+@media (max-width:640px){
+  /* equity strip: two stacked rows instead of one wide line */
+  .eqstrip{height:auto!important;flex-direction:column;gap:8px;padding:8px 12px 10px;overflow:visible}
+  .eqstrip.eq-spacer{display:none}
+  .eqstrip .eqt,.eqstrip .eqt.wide{max-width:none;width:100%}
+  .eqstrip .eql{font-size:10px;white-space:normal}
+  .eqstrip .eqn{flex-wrap:wrap;white-space:normal;gap:4px 10px}
+  .eqstrip .eqv{font-size:26px}
+  .eqstrip .eqbar{width:auto;flex:1 1 90px;min-width:80px}
+  /* colour-view switch and legend wrap */
+  .cmode{flex-wrap:wrap}
+  .rg-pcts{flex-wrap:wrap}
+  /* bet-size badges */
+  .act-main{font-size:13px;padding:4px 9px}
+  .act-alt{white-space:normal;font-size:12px}
+}
 </style>
 
 </head>
@@ -3909,6 +3926,52 @@ function brFindBacks(img,g){ const {width:W,data:D}=img;
   const backs=cs.filter(c=>{ let o=0, tot=0; for(let y=c.y0;y<=c.y1;y+=2) for(let x=c.x0;x<=c.x1;x+=2){ const i=(y*W+x)*4, r=D[i], gg=D[i+1], b=D[i+2]; tot++; if(r>170&&r-b>90&&gg>70&&gg<190) o++; } return tot&&o/tot>0.03; });
   return backs.map(c=>({x:(c.x0+c.x1)/2,y:(c.y0+c.y1)/2})); }
 function readBoard(img){ return readTable(img).board; }
+// ---- live seat overlay (Windows app): a light scan of the poker window, repeated every second or so ----
+// the stack pill next to a seat: the band of rows near the seat that is mostly light grey/white (text and the seat number make small gaps)
+function brCrop(img,x,y,w,h){ if(x===0&&y===0&&w===img.width&&h===img.height) return img; const out=new ImageData(w,h), S=img.data, T=out.data;
+  for(let r=0;r<h;r++){ const si=((y+r)*img.width+x)*4; T.set(S.subarray(si,si+w*4),r*w*4); } return out; }
+function brFindPill(img,g,ax,ay){ const {width:W,height:H,data:D}=img, ch=g.ch;
+  const light=i=>{ const r=D[i],gg=D[i+1],b=D[i+2], mx=Math.max(r,gg,b), mn=Math.min(r,gg,b); return mn>=95&&mx-mn<=48; };
+  const x0=Math.max(0,Math.round(ax-1.7*ch)), x1=Math.min(W-1,Math.round(ax+1.7*ch)), y0=Math.max(0,Math.round(ay-0.95*ch)), y1=Math.min(H-1,Math.round(ay+0.95*ch));
+  const rows=[]; for(let y=y0;y<=y1;y++){ let n=0; for(let x=x0;x<=x1;x++) if(light((y*W+x)*4)) n++; rows.push(n); }
+  const need=ch*0.6; let best=null; const hi=i=>i>=0&&i<rows.length&&rows[i]>=need;
+  const on=rows.map((_,i)=>hi(i)||(hi(i-1)&&hi(i+1))||(hi(i-2)&&hi(i+2))||(hi(i-1)&&hi(i+2))||(hi(i-2)&&hi(i+1)));   /* a text row can dip below; bridge 1-2 row gaps */
+  for(let i=0;i<rows.length;){ if(!on[i]){ i++; continue; } let j=i; while(j+1<rows.length&&on[j+1]) j++;
+    const h=j-i+1; if(h>=ch*0.16&&h<=ch*0.6){ const cy=y0+(i+j)/2, dd=Math.abs(cy-ay); if(!best||dd<best.dd) best={top:y0+i,bot:y0+j,cy,dd}; } i=j+1; }
+  if(!best) return null;
+  // left and right ends: the widest run of light pixels on the middle rows, small gaps (text) allowed
+  const span=y=>{ let l=null,r=null,gap=0; const maxGap=Math.round(ch*0.22); let curL=null,last=null,bestL=null,bestR=null;
+    for(let x=x0;x<=x1;x++){ if(light((y*W+x)*4)){ if(curL===null||x-last>maxGap){ curL=x; } last=x; if(bestL===null||last-curL>bestR-bestL){ bestL=curL; bestR=last; } } } return [bestL,bestR]; };
+  const ys=[best.cy-((best.bot-best.top)*0.25),best.cy,best.cy+((best.bot-best.top)*0.25)].map(Math.round); let L=1e9,Rr=-1;
+  ys.forEach(y=>{ const [l,r]=span(y); if(l!=null){ L=Math.min(L,l); Rr=Math.max(Rr,r); } });
+  if(Rr-L<ch*0.8) return null;
+  // the seat number circle at the left end is coloured, not grey: walk left over it until the felt starts
+  { const y=Math.round(best.cy), felt=i=>{ const r=D[i],gg=D[i+1],b=D[i+2]; return gg-r>12&&b-r>6&&Math.max(r,gg,b)-Math.min(r,gg,b)<90; }; const run=Math.max(3,Math.round(ch*0.08)); let x=L-1, lim=Math.max(0,Math.round(L-ch*0.6)), n=0, lastNon=L;
+    while(x>lim){ if(felt((y*W+x)*4)){ if(++n>=run) break; } else { n=0; lastNon=x; } x--; } L=lastNon; }   /* stop only at a few felt pixels in a row (the digit's edge can look like felt) */
+  return {x0:L,x1:Rr,y0:best.top,y1:best.bot}; }
+// cards in front of a seat: dark backs with the orange logo (others), or coloured card faces (you)
+function brHeroIn(img,g){ const hx=g.cx+BR_SEATS[0][0]*g.ch, hy=g.cy+BR_SEATS[0][1]*g.ch;
+  const c=brFindCards(img).filter(k=>Math.abs((k.x0+k.x1)/2-hx)<g.ch*1.1&&Math.abs((k.y0+k.y1)/2-(hy-g.ch*0.3))<g.ch*0.9&&k.h>g.ch*0.25); return c.length>=2; }
+/* One look at the poker window. cache keeps the table geometry for this window size, so a frame with no cards showing still works.
+   Returns {ok:true,seats:[{i,pos,hero,inHand,tag:{x,y,h}}]} or {ok:false,why}. */
+function ovScan(img,cache){ cache=cache||{}; const key=img.width+"x"+img.height; let g=cache.g&&cache.key===key?cache.g:null;
+  if(!g){ const ok=x=>x.glyph&&x.rank!=="?"; const cands=brFindCards(img).filter(c=>{ c._r=brRead(img,c); return ok(c._r)&&c._r.glyph.ink>0.12&&c._r.glyph.ink<0.75; });
+    const {board,hand}=brSplit(cands); g=brGeom(board,hand); if(!g) return {ok:false,why:"no cards on the table yet to measure it from"}; cache.g=g; cache.key=key; }
+  // work on the table only (the window may include lobby panels), blown up 2-3x when small so the little D button has enough pixels
+  const cx0=Math.max(0,Math.floor(g.cx-4.6*g.ch)), cy0=Math.max(0,Math.floor(g.cy-2.9*g.ch)), cx1=Math.min(img.width,Math.ceil(g.cx+4.6*g.ch)), cy1=Math.min(img.height,Math.ceil(g.cy+2.9*g.ch));
+  let im=brCrop(img,cx0,cy0,cx1-cx0,cy1-cy0), gg={cx:g.cx-cx0,cy:g.cy-cy0,ch:g.ch}, k=1;
+  if(g.ch<110){ k=Math.min(3,Math.ceil(110/g.ch)); if(k>1){ im=brScaleImg(im,k); gg={cx:gg.cx*k,cy:gg.cy*k,ch:gg.ch*k}; } }
+  const ds=brFindDealer(im,gg,true), d=ds.find(c=>brSeatAt(gg,c.x,c.y)!=null); if(!d) return {ok:false,why:"no dealer button found"};
+  const dk=brSeatAt(gg,d.x,d.y), vac=brFindVacant(im,gg); const backs=brFindBacks(im,gg).map(b=>brSeatAt(gg,b.x,b.y)).filter(j=>j!=null&&j!==0);
+  const coins=brFindCoins(im,gg,d).map(c=>brSeatAngle(gg,c.x,c.y)); const out=brSittingOut(dk,vac,coins,true,"ov"+dk);
+  const P=brPositions(dk,vac.concat(out)); const heroIn=brHeroIn(img,g);
+  const seats=[]; let miss=0;
+  for(let i=0;i<6;i++){ if(!P[i]&&!out.includes(i)) continue; const ax=g.cx+BR_SEATS[i][0]*g.ch, ay=g.cy+BR_SEATS[i][1]*g.ch; const pill=brFindPill(img,g,ax,ay);
+    if(!pill){ miss++; continue; } const h=pill.y1-pill.y0+1;
+    seats.push({i,pos:P[i]||"OUT",out:!P[i],hero:i===0,inHand:!P[i]?false:i===0?heroIn:backs.includes(i),tag:{x:pill.x0,y:pill.y0,h,w:pill.x1-pill.x0+1}}); }
+  if(!seats.length) return {ok:false,why:"no seats found"};
+  return {ok:true,seats,dealer:dk,miss,size:key}; }
+
 
 let scanStream=null, scanVideo=null, lastScan=null;
 const SUITCH_SYM={s:"♠",h:"♥",d:"♦",c:"♣"};

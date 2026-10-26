@@ -1,8 +1,8 @@
 {
   "applicationId": "app.pokertrainer.sixmax",
-  "version": "1.4.0",
+  "version": "1.4.1",
   "resourcesURL": "resources.neu",
-  "sha256": "2376338ced6b6240dcd53a66e6fb000cf7c7766748b7f60c68f2bcada43fc50b",
-  "notes": "Position overlay: Shift+R (or the switch on the Ranges tab) shows position tags over your poker table, updated about once a second. Taskbar dot shows when it's on (green) or can't read the table (amber). Checks that fail twice in a row save a picture to the 'overlay misses' folder next to the app (Shift+W saves one any time, 300 MB max). R and Read now always read your poker window, never whatever is in front; your poker programs are listed with a remove button.",
+  "sha256": "c827d0ac0847de02391d6d1287563e1c7972f519758390eef0cab0ed3016a1ca",
+  "notes": "Fix: in 1.4.0 the table reader stopped as soon as your poker window came to the front, which also broke R and Read and locked the overlay switch. It now restarts itself if it ever stops, and writes any problems to table-reader-log.txt in the Poker Trainer folder.",
   "data": {}
 }

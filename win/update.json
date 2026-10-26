@@ -1,8 +1,8 @@
 {
   "applicationId": "app.pokertrainer.sixmax",
-  "version": "1.4.7",
+  "version": "1.4.8",
   "resourcesURL": "resources.neu",
-  "sha256": "6a5eb04784c8d48bbbc1184d1c8864397286176a13f50973f38d8d751c0fe72f",
-  "notes": "New overlay look: the position fills the left end of each stack pill (thin yellow outline = still in the hand, green = you, grey = out). New players who weren't dealt in get no tag and don't count for positions. Fixed the BTN tag being pushed left by the dealer button.",
+  "sha256": "8db4d8c852bedbc722f40d7a7638f6babee48d63c8f8fc319a9fe4e6978f5c36",
+  "notes": "No more overlay flicker: the overlay is now attached to your poker table window, so Windows keeps it on top of the table instantly when you click into the table or cards are dealt.",
   "data": {}
 }

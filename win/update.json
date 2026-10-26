@@ -1,8 +1,8 @@
 {
   "applicationId": "app.pokertrainer.sixmax",
-  "version": "1.4.6",
+  "version": "1.4.7",
   "resourcesURL": "resources.neu",
-  "sha256": "1a3948eb1e0ca1844ac2de0032176875566a43ee4c3c3b49de3855dfc70b5a4b",
-  "notes": "Anchored overlay: each seat's tag is measured once and locked in place, so tags never drift. Resizing the poker window re-measures them; moving it needs nothing.",
+  "sha256": "6a5eb04784c8d48bbbc1184d1c8864397286176a13f50973f38d8d751c0fe72f",
+  "notes": "New overlay look: the position fills the left end of each stack pill (thin yellow outline = still in the hand, green = you, grey = out). New players who weren't dealt in get no tag and don't count for positions. Fixed the BTN tag being pushed left by the dealer button.",
   "data": {}
 }

@@ -1,8 +1,8 @@
 {
   "applicationId": "app.pokertrainer.sixmax",
-  "version": "1.4.2",
+  "version": "1.4.3",
   "resourcesURL": "resources.neu",
-  "sha256": "10d02d52be2ef59f8664d2fdd4d69036afdf50fedd5b5f4b6b31527efd40c7ec",
-  "notes": "Position overlay works on any table colour (e.g. Ignition's navy felt), not just green. Includes the 1.4.1 fix for the table reader stopping.",
+  "sha256": "51e69dc835f92591cb568d98fd11ba817660e0f062e1d9b316e590bf99a8590d",
+  "notes": "Safer updates: a new version is now swapped in only after the app closes, so the app can't show garbled text between downloading an update and restarting.",
   "data": {}
 }

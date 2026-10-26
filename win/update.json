@@ -1,8 +1,8 @@
 {
   "applicationId": "app.pokertrainer.sixmax",
-  "version": "1.4.10",
+  "version": "1.4.11",
   "resourcesURL": "resources.neu",
-  "sha256": "ee4fa4cb89869af97f8a333220a935d5ac9b412a9ddf9cf20bf8f2bde204c6c5",
-  "notes": "Smooth overlay: labels fade between changes, hide between hands and fade back in when cards are dealt. Outlines now line up exactly with the edge of each tag.",
+  "sha256": "da37e855ebe463817c3a278e48f8d40a4e08200d8886c48570fa20e0baed29b0",
+  "notes": "Overlay outlines now also cover the soft edge of Ignition's pills, so no grey rim shows outside them.",
   "data": {}
 }

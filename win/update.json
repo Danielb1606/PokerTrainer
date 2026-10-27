@@ -1,8 +1,8 @@
 {
   "applicationId": "app.pokertrainer.sixmax",
-  "version": "1.5.1",
+  "version": "1.5.2",
   "resourcesURL": "resources.neu",
-  "sha256": "2bfcef948751665f6f34ebf17c21e4b7af0de428eb26935822be6056589b07ae",
-  "notes": "Opening charts on the table: press Shift+E (or Show charts) and every opponent still in the hand gets their position's opening chart from your active profile, next to their seat: above the top player, left of the left players, right of the right players. Shift+= / Shift+- or the size slider resize them. They follow the positions each hand and hide when the hand ends.",
+  "sha256": "f907819a72075fcb8960bd306ef0cbc7f80b22542697a46e9b4cb952cbff31ff",
+  "notes": "Charts now stay on like the position tags: press Shift+E once and they show on every table, fade out between hands and come back next hand at the new positions. Shift+E again turns them off.",
   "data": {}
 }

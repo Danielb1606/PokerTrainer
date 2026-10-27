@@ -1,8 +1,8 @@
 {
   "applicationId": "app.pokertrainer.sixmax",
-  "version": "1.5.3",
+  "version": "1.5.4",
   "resourcesURL": "resources.neu",
-  "sha256": "22c5d455724ef83471eba21fd226d7efc3a91cb04599113df3b1a971f81a73df",
-  "notes": "BB now gets a chart too: its widest one, BB vs SB (3-bet / call / fold). Charts now stay in fixed spots: a player folding no longer moves anyone else's chart.",
+  "sha256": "13cf9b7d835f1a6df77a22138cc20d43fd11187b3e9470748c77c2a06f3bdba2",
+  "notes": "Table charts now use your GTO-Wiz-Opponents profile. They follow the action: the opener shows their opening chart, and anyone still in after the open (callers, the blinds) shows their chart against that open, with 3-bets and calls. A 1 BB bet counts as a limp, not an open.",
   "data": {}
 }

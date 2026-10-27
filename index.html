@@ -1190,6 +1190,23 @@ body{padding-bottom:16px!important}
   .act-main{font-size:13px;padding:4px 9px}
   .act-alt{white-space:normal;font-size:12px}
 }
+/* ===== phone layer: features added after 2026-10-11 ===== */
+@media (max-width:640px){
+  /* equity strip: two stacked rows instead of one wide line */
+  .eqstrip{height:auto!important;flex-direction:column;gap:8px;padding:8px 12px 10px;overflow:visible}
+  .eqstrip.eq-spacer{display:none}
+  .eqstrip .eqt,.eqstrip .eqt.wide{max-width:none;width:100%}
+  .eqstrip .eql{font-size:10px;white-space:normal}
+  .eqstrip .eqn{flex-wrap:wrap;white-space:normal;gap:4px 10px}
+  .eqstrip .eqv{font-size:26px}
+  .eqstrip .eqbar{width:auto;flex:1 1 90px;min-width:80px}
+  /* colour-view switch and legend wrap */
+  .cmode{flex-wrap:wrap}
+  .rg-pcts{flex-wrap:wrap}
+  /* bet-size badges */
+  .act-main{font-size:13px;padding:4px 9px}
+  .act-alt{white-space:normal;font-size:12px}
+}
 </style>
 
 </head>
@@ -3953,8 +3970,16 @@ function brFindCoins(img,g,dealer){ const {width:W,height:H,data:D}=img; const l
     // white amount text on a dark strip to the right
     let white=0, dark=0, tot=0; const x0=Math.round(c.x1+c.w*0.3), x1=Math.round(c.x1+c.w*2.8);
     for(let y=Math.round(cy-r);y<=Math.round(cy+r);y++) for(let x=x0;x<=x1;x++){ const [a,b2,c2]=px(x,y); tot++; const mn=Math.min(a,b2,c2), mx=Math.max(a,b2,c2); if(mn>=200) white++; else if(mx<115) dark++; }
-    if(tot&&white/tot>0.04&&white/tot<0.5&&dark/tot>0.3) out.push({x:cx,y:cy}); });
+    if(tot&&white/tot>0.04&&white/tot<0.5&&dark/tot>0.3) out.push({x:cx,y:cy,amt:brAmtSig(px,x0,Math.round(cy-r),Math.round(cy+r),c.w)}); });
   return out; }
+// the bet amount's white text as a column profile (no reading needed: two bets of the same size look the same)
+function brAmtSig(px,x0,y0,y1,cw){ const cols=[]; let gap=0, started=false;
+  for(let x=x0;x<x0+cw*7;x++){ let n=0; for(let y=y0;y<=y1;y++){ const [a,b,c]=px(x,y); if(Math.min(a,b,c)>=200) n++; }
+    if(n){ started=true; gap=0; cols.push(n); } else if(started){ if(++gap>cw*0.7) break; cols.push(0); } }
+  while(cols.length&&!cols[cols.length-1]) cols.pop(); return cols; }
+function brSameAmt(a,b){ if(!a||!b||!a.length||!b.length||Math.abs(a.length-b.length)>2) return false; const tot=a.reduce((x,y)=>x+y,0)||1; let best=1e9;
+  for(let o=-2;o<=2;o++){ let d=0; const n=Math.max(a.length,b.length); for(let i=0;i<n;i++) d+=Math.abs((a[i]||0)-(b[i+o]||0)); best=Math.min(best,d); }
+  return best/tot<0.3; }
 // Before the flop the small and big blinds are the first two seats after the button with a bet in front of them.
 // A seat skipped on the way (no bet) is sitting out. Remembered for later streets of the same hand (same button, same hole cards).
 // dealt = seats with cards in front of them: they're playing this hand, so they're never sitting out (and count as blinds
@@ -4087,7 +4112,7 @@ function ovScan(img,cache){ cache=cache||{}; const key=img.width+"x"+img.height;
   if(g.ch<110){ k=Math.min(3,Math.ceil(110/g.ch)); if(k>1){ im=brScaleImg(im,k); gg={cx:gg.cx*k,cy:gg.cy*k,ch:gg.ch*k}; } }
   const ds=brFindDealer(im,gg,true), d=ds.find(c=>brSeatAt(gg,c.x,c.y)!=null); if(!d) return {ok:false,why:"no dealer button found"};
   const dk=brSeatAt(gg,d.x,d.y), vac=brFindVacant(im,gg); const backs=brFindBacks(im,gg).map(b=>brSeatAt(gg,b.x,b.y)).filter(j=>j!=null&&j!==0);
-  const coins=brFindCoins(im,gg,d).map(c=>brSeatAngle(gg,c.x,c.y)); const hc=brHeroCards(img,g), heroIn=hc.live;
+  const coinsF=brFindCoins(im,gg,d), coins=coinsF.map(c=>brSeatAngle(gg,c.x,c.y)); const hc=brHeroCards(img,g), heroIn=hc.live;
   const out=brSittingOut(dk,vac,coins,true,"ov"+(cache.id||"")+"_"+dk,backs.concat(hc.any?[0]:[]));   /* folded (greyed cards) still means you were dealt in */
   const avoid={x:d.x/k+cx0,y:d.y/k+cy0,r:(d.r||g.ch*0.3*k)/k*1.4}, pills={}, fresh=[];
   for(let i=0;i<6;i++){ if(vac.includes(i)) continue; const ax=g.cx+BR_SEATS[i][0]*g.ch, ay=g.cy+BR_SEATS[i][1]*g.ch; pills[i]=brFindPill(img,g,ax,ay,avoid);
@@ -4098,7 +4123,10 @@ function ovScan(img,cache){ cache=cache||{}; const key=img.width+"x"+img.height;
     if(!pill){ miss++; continue; } const h=pill.y1-pill.y0+1;
     seats.push({i,pos:P[i]||"OUT",out:!P[i],hero:i===0,inHand:!P[i]?false:i===0?heroIn:backs.includes(i),tag:{x:pill.x0,y:pill.y0,h,w:pill.x1-pill.x0+1,c1:pill.c1}}); }
   if(!seats.length) return {ok:false,why:"no seats found"};
-  return {ok:true,seats,dealer:dk,miss,size:key}; }
+  // bets: seats with a bet marker in front of them; limps: those whose bet is the same size as the big blind's
+  const bbS=seats.find(s=>s.pos==="BB"), bbC=bbS&&coinsF.find((c,j)=>coins[j]===bbS.i);
+  const limps=bbC?[...new Set(coinsF.filter((c,j)=>coins[j]!==bbS.i&&brSameAmt(c.amt,bbC.amt)).map(c=>brSeatAngle(gg,c.x,c.y)))]:[];
+  return {ok:true,seats,dealer:dk,miss,size:key,bets:[...new Set(coins)],limps}; }
 
 
 let scanStream=null, scanVideo=null, lastScan=null;

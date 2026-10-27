@@ -1173,6 +1173,23 @@ body{padding-bottom:16px!important}
   .act-main{font-size:13px;padding:4px 9px}
   .act-alt{white-space:normal;font-size:12px}
 }
+/* ===== phone layer: features added after 2026-10-11 ===== */
+@media (max-width:640px){
+  /* equity strip: two stacked rows instead of one wide line */
+  .eqstrip{height:auto!important;flex-direction:column;gap:8px;padding:8px 12px 10px;overflow:visible}
+  .eqstrip.eq-spacer{display:none}
+  .eqstrip .eqt,.eqstrip .eqt.wide{max-width:none;width:100%}
+  .eqstrip .eql{font-size:10px;white-space:normal}
+  .eqstrip .eqn{flex-wrap:wrap;white-space:normal;gap:4px 10px}
+  .eqstrip .eqv{font-size:26px}
+  .eqstrip .eqbar{width:auto;flex:1 1 90px;min-width:80px}
+  /* colour-view switch and legend wrap */
+  .cmode{flex-wrap:wrap}
+  .rg-pcts{flex-wrap:wrap}
+  /* bet-size badges */
+  .act-main{font-size:13px;padding:4px 9px}
+  .act-alt{white-space:normal;font-size:12px}
+}
 </style>
 
 </head>
@@ -3946,8 +3963,8 @@ function brSittingOut(k,vac,coinSeats,preflop,handKey,dealt){ dealt=dealt||[]; c
 function brSittingOut0(k,vac,coinSeats,preflop,handKey){ const has=new Set(coinSeats);
   if(preflop&&has.size>=2){ const out=[]; let found=0;
     for(let i=1;i<6&&found<2;i++){ const j=(k+i)%6; if(vac.includes(j)) continue; if(has.has(j)) found++; else out.push(j); }
-    if(found===2){ window.__brOut={k,out,hand:handKey,at:Date.now()}; return out; } }
-  const m=window.__brOut; if(m&&m.k===k&&handKey&&m.hand===handKey&&Date.now()-m.at<10*60*1000) return m.out.filter(j=>!vac.includes(j));
+    if(found===2){ (window.__brOutM=window.__brOutM||{})[handKey]={k,out,at:Date.now()}; return out; } }   /* remembered per table + hand */
+  const m=(window.__brOutM||{})[handKey]; if(m&&m.k===k&&handKey&&Date.now()-m.at<10*60*1000) return m.out.filter(j=>!vac.includes(j));
   return []; }
 // an empty seat shows a light grey person icon (round head, wider shoulders just below)
 function brFindVacant(img,g){ const lo=g.ch*0.06, hi=g.ch*0.2;
@@ -4071,7 +4088,7 @@ function ovScan(img,cache){ cache=cache||{}; const key=img.width+"x"+img.height;
   const ds=brFindDealer(im,gg,true), d=ds.find(c=>brSeatAt(gg,c.x,c.y)!=null); if(!d) return {ok:false,why:"no dealer button found"};
   const dk=brSeatAt(gg,d.x,d.y), vac=brFindVacant(im,gg); const backs=brFindBacks(im,gg).map(b=>brSeatAt(gg,b.x,b.y)).filter(j=>j!=null&&j!==0);
   const coins=brFindCoins(im,gg,d).map(c=>brSeatAngle(gg,c.x,c.y)); const hc=brHeroCards(img,g), heroIn=hc.live;
-  const out=brSittingOut(dk,vac,coins,true,"ov"+dk,backs.concat(hc.any?[0]:[]));   /* folded (greyed cards) still means you were dealt in */
+  const out=brSittingOut(dk,vac,coins,true,"ov"+(cache.id||"")+"_"+dk,backs.concat(hc.any?[0]:[]));   /* folded (greyed cards) still means you were dealt in */
   const avoid={x:d.x/k+cx0,y:d.y/k+cy0,r:(d.r||g.ch*0.3*k)/k*1.4}, pills={}, fresh=[];
   for(let i=0;i<6;i++){ if(vac.includes(i)) continue; const ax=g.cx+BR_SEATS[i][0]*g.ch, ay=g.cy+BR_SEATS[i][1]*g.ch; pills[i]=brFindPill(img,g,ax,ay,avoid);
     if(pills[i]&&i!==0&&!backs.includes(i)&&brNewBadge(img,pills[i])) fresh.push(i); }

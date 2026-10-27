@@ -1,8 +1,8 @@
 {
   "applicationId": "app.pokertrainer.sixmax",
-  "version": "1.4.13",
+  "version": "1.5.0",
   "resourcesURL": "resources.neu",
-  "sha256": "2db8b8f888c538f00e38cf69457e387b4388d70e405c92ece1345ac5522db5c1",
-  "notes": "When you fold, your own position tag turns grey (Ignition greys your cards) and keeps its green outline.",
+  "sha256": "3c5e7a556a249cdfc87f95fc1efc0686f7cede9449a7c193143c89083d26c252",
+  "notes": "Multi-tabling: every open Ignition table now gets its own position labels at the same time, each checked about once a second. Tables whose picture hasn't changed are skipped, so extra tables cost little CPU.",
   "data": {}
 }

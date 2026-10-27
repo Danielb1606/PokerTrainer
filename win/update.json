@@ -1,8 +1,8 @@
 {
   "applicationId": "app.pokertrainer.sixmax",
-  "version": "1.5.0",
+  "version": "1.5.1",
   "resourcesURL": "resources.neu",
-  "sha256": "3c5e7a556a249cdfc87f95fc1efc0686f7cede9449a7c193143c89083d26c252",
-  "notes": "Multi-tabling: every open Ignition table now gets its own position labels at the same time, each checked about once a second. Tables whose picture hasn't changed are skipped, so extra tables cost little CPU.",
+  "sha256": "2bfcef948751665f6f34ebf17c21e4b7af0de428eb26935822be6056589b07ae",
+  "notes": "Opening charts on the table: press Shift+E (or Show charts) and every opponent still in the hand gets their position's opening chart from your active profile, next to their seat: above the top player, left of the left players, right of the right players. Shift+= / Shift+- or the size slider resize them. They follow the positions each hand and hide when the hand ends.",
   "data": {}
 }

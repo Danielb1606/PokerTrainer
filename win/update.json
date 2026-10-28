@@ -1,8 +1,8 @@
 {
   "applicationId": "app.pokertrainer.sixmax",
-  "version": "1.5.4",
+  "version": "1.5.5",
   "resourcesURL": "resources.neu",
-  "sha256": "13cf9b7d835f1a6df77a22138cc20d43fd11187b3e9470748c77c2a06f3bdba2",
-  "notes": "Table charts now use your GTO-Wiz-Opponents profile. They follow the action: the opener shows their opening chart, and anyone still in after the open (callers, the blinds) shows their chart against that open, with 3-bets and calls. A 1 BB bet counts as a limp, not an open.",
+  "sha256": "3ee6e717e4208d0a293b8e51b58a7415a5fd00e962e643e82a3f2dd50cc72513",
+  "notes": "Your own chart now shows too: just below the poker window, from the profile you have picked in the trainer (opponents keep GTO-Wiz-Opponents). It switches to your chart against an open when someone raises before you, and hides when you fold.",
   "data": {}
 }
